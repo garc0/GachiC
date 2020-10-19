@@ -36,6 +36,7 @@ extern llvm::IRBuilder<> Builder;
 extern std::unique_ptr<llvm::Module> TheModule;
 
 extern std::map<std::string, llvm::Type*> NamedStructures;
+extern std::map<llvm::Type *, std::vector<std::pair<std::string, llvm::Type *>>> StructFields;
 
 extern std::map<std::string, std::pair<llvm::AllocaInst *, llvm::Type*>> NamedValues;
 extern std::map<std::string, std::unique_ptr<PrototypeNode>> FunctionProtos;

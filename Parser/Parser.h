@@ -62,6 +62,7 @@ public:
     }
 
     std::unique_ptr<PrototypeNode>  parsePrototype();
+    std::unique_ptr<PrototypeNode>  parseExtern();
     std::unique_ptr<FunctionNode>   parseDef();
     
     std::unique_ptr<BaseNode>       parseStruct();
@@ -82,7 +83,7 @@ private:
 
     std::unique_ptr<BlockNode> _cBlock = nullptr;
 
-    std::map<std::string, uint16_t> _bOp = {
+    std::map<std::string_view, uint16_t> _bOp = {
         {"=",   2},
         {"<",   20},
         {">",   20},
@@ -110,6 +111,8 @@ private:
 
     std::unique_ptr<BaseNode> parsePrimary();
     std::unique_ptr<BaseNode> parseUnary();
+
+    llvm::Type * parseType();
 
     int GetTokPrecedence(Token tok);
 

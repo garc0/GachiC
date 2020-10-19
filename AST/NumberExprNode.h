@@ -6,12 +6,9 @@
 
 class NumberExprNode : public BaseNode {
 private:
-  int64_t Val;
-  
-  llvm::Type * type_val;
-
+  std::string _val;
 public:
-  NumberExprNode(double_t Val, llvm::Type * t = llvm::Type::getInt64Ty(TheContext)) : Val(Val), type_val(t) {}
+  NumberExprNode(std::string Val) : _val(Val) {}
 
   llvm::Value *codegen() override;
 };

@@ -19,3 +19,20 @@ private:
     std::vector<std::pair<std::string, llvm::Type *>> _elements;
     std::string _struct_name;
 };
+
+
+class StructExprNode : public BaseNode {
+  std::string Name;
+  std::vector<std::pair<std::string, std::unique_ptr<BaseNode>>> _elements;
+
+public:
+  StructExprNode(
+    std::string Name, 
+    std::vector<std::pair<std::string, std::unique_ptr<BaseNode>>> elems) : 
+    Name(std::move(Name)),
+    _elements(std::move(elems)
+    ) {}
+
+  llvm::Value *codegen() override;
+  const std::string &getName() const { return Name; }
+};

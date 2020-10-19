@@ -14,7 +14,7 @@ llvm::Value * VarExprNode::codegen() {
   
   for (unsigned i = 0, e = VarNames.size(); i != e; ++i) {
     const std::string &VarName = VarNames[i].first;
-    BaseNode *Init = VarNames[i].second.get();
+    BaseNode * Init = VarNames[i].second.get();
 
     llvm::Value * InitVal;
     if (Init) {

@@ -23,6 +23,7 @@ public:
         
         Var,
         In,
+        Cum,
 
         Def,
         Struct,
@@ -103,7 +104,7 @@ private:
 static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
     static const char * const names[]{
             "Number", "Identifier",
-            "Var", "In",
+            "Var", "In", "Cum",
             "Def", "Struct", "Extern", 
             "If", "Else", "For",
             "Binary", "Unary", 

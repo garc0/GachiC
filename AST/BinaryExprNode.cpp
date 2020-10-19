@@ -9,12 +9,12 @@ llvm::Value *BinaryExprNode::codegen() {
         if (!LHSE)
             return LogErrorV("destination of '=' must be a variable");
         
-        llvm::Value *Val = RHS->codegen();
+        llvm::Value * Val = RHS->codegen();
         if (!Val)
             return nullptr;
 
         // Look up the name.
-        llvm::Value *Variable = std::get<0>(NamedValues[LHSE->getName()]);
+        llvm::Value * Variable = std::get<0>(NamedValues[LHSE->getName()]);
         if (!Variable)
             return LogErrorV("Unknown variable name\n");
 
@@ -33,6 +33,10 @@ llvm::Value *BinaryExprNode::codegen() {
       std::cout << "L->getType() != R->getType()" << std::endl;
     }
 
+    if(L->getType()->isPointerTy()){
+
+    }
+
     if(!L->getType()->isFloatingPointTy()){
         switch (Op.kind()) {
         case Token::Kind::Plus:
@@ -46,11 +50,9 @@ llvm::Value *BinaryExprNode::codegen() {
         case Token::Kind::Modulo:
             return Builder.CreateURem(L, R, "modu");
         case Token::Kind::LessThan:
-            L = Builder.CreateICmpSLT(L, R, "cmpu");
-            return L;
+            return Builder.CreateICmpSLT(L, R, "cmpu");
         case Token::Kind::GreaterThan:
-            L = Builder.CreateICmpSLT(R, L, "cmpu");
-            return L;
+            return Builder.CreateICmpSLT(R, L, "cmpu");
         default:
             break;
         }

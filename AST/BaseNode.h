@@ -26,7 +26,6 @@
 
 #include <iostream>
 
-
 class BaseNode {
 public:
   virtual ~BaseNode() = default;

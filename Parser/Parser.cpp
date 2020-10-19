@@ -1,14 +1,14 @@
 #include "Parser.h"
 
 std::unique_ptr<BaseNode> Parser::parseNumber() {
-  auto Result = std::make_unique<NumberExprNode>(std::stoll(std::string(this->_cToken.lexeme()), nullptr, 10));
+  auto Result = std::make_unique<NumberExprNode>(std::string(this->_cToken.lexeme()));
   this->eat();
   return std::move(Result);
 }
 
 std::unique_ptr<BaseNode> Parser::parseParen() {
 
-  this->eat();
+  this->expectNext(Token::Kind::LeftParen);
 
   auto V = parseExpression();
   if (!V)
@@ -21,7 +21,7 @@ std::unique_ptr<BaseNode> Parser::parseParen() {
 }
 
 std::unique_ptr<BaseNode> Parser::parseBlock() {
-  this->eat();
+   this->expectNext(Token::Kind::LeftCurly);
 
   auto oldBlock = std::move(_cBlock);
   _cBlock = std::make_unique<BlockNode>(); 
@@ -61,31 +61,78 @@ std::unique_ptr<BaseNode> Parser::parseIdentifier() {
 
     this->eat(); 
 
-    if (this->_cToken.kind() != Token::Kind::LeftParen) 
-        return std::make_unique<VariableExprNode>(IdName);
+    if (this->_cToken.kind() == Token::Kind::LeftParen){
+        // Call
+        this->eat(); 
+        std::vector<std::unique_ptr<BaseNode>> Args;
+        if (this->_cToken.kind() != Token::Kind::RightParen) {
+            while (true) {
+                if (auto Arg = parseExpression())
+                    Args.push_back(std::move(Arg));
+                else
+                    return nullptr;
 
-    // Call
-    this->eat(); 
-    std::vector<std::unique_ptr<BaseNode>> Args;
-    if (this->_cToken.kind() != Token::Kind::RightParen) {
-        while (true) {
-            if (auto Arg = parseExpression())
-                Args.push_back(std::move(Arg));
-            else
-                return nullptr;
+                if (this->_cToken.kind() == Token::Kind::RightParen)
+                    break;
 
-            if (this->_cToken.kind() == Token::Kind::RightParen)
-                break;
-
-            if(!this->expectNext(Token::Kind::Comma).has_value())
-                return nullptr;
+                if(!this->expectNext(Token::Kind::Comma).has_value())
+                    return nullptr;
+            }
         }
+
+        if(!this->expectNext(Token::Kind::RightParen).has_value())
+            return nullptr;
+
+        return std::make_unique<CallExprNode>(IdName, std::move(Args));
     }
 
-    if(!this->expectNext(Token::Kind::RightParen).has_value())
-        return nullptr;
+    if(this->_cToken.kind() == Token::Kind::LeftCurly){
+        // struct init
+        this->expectNext(Token::Kind::LeftCurly);
 
-    return std::make_unique<CallExprNode>(IdName, std::move(Args));
+        std::vector<std::pair<std::string, std::unique_ptr<BaseNode>>> fields;
+
+        while(this->_cToken.kind() != Token::Kind::RightCurly){
+            this->expectNext(Token::Kind::Dot);
+            if(!this->_cToken.is_kind(Token::Kind::Identifier)){
+                std::cout << "Field name, ah?" << std::endl;
+                return nullptr;
+            }
+
+            std::string field_name(this->_cToken.lexeme());
+
+            this->eat();
+
+            this->expectNext(Token::Kind::Equal);
+            std::unique_ptr<BaseNode> val = this->parseExpression();
+
+            if(!val) {
+                std::cout << "Why can't you be just a normal!?" << std::endl;
+                return nullptr;
+            }
+
+            fields.push_back(std::make_pair(std::move(field_name), std::move(val)));
+
+            //this->expectNext(Token::Kind::Comma);
+        }
+
+        this->expectNext(Token::Kind::RightCurly);
+
+        return std::make_unique<StructExprNode>(std::move(IdName), std::move(fields));
+
+    }
+
+    if(this->_cToken.kind() == Token::Kind::LeftSquare){
+        //Array index
+        
+        std::unique_ptr<BaseNode> E = this->parseExpression();
+
+        // ah
+
+        this->expectNext(Token::Kind::RightSquare);
+    }
+    // just a variable; 
+    return std::make_unique<VariableExprNode>(IdName);
 }
 
 std::unique_ptr<BaseNode> Parser::parseIf() {
@@ -96,7 +143,6 @@ std::unique_ptr<BaseNode> Parser::parseIf() {
     auto Cond = parseExpression();
     if (!Cond)
         return nullptr;
-
 
     auto Then = parsePrimary();
     if (!Then)
@@ -122,16 +168,15 @@ std::unique_ptr<BaseNode> Parser::parseFor() {
     std::string IdName(this->_cToken.lexeme());
     this->eat(); // eat identifier.
 
-    if (this->_cToken.kind() != Token::Kind::Equal)
-     return LogError("expected '=' after for");
-    this->eat(); // eat '='.
+    if(!this->expectNext(Token::Kind::Equal).has_value())
+        return nullptr;
 
     auto Start = parseExpression();
     if (!Start)
         return nullptr;
-    if (this->_cToken.kind() != Token::Kind::Comma)
-        return LogError("expected ',' after for start value");
-    this->eat();
+    
+    if(!this->expectNext(Token::Kind::Comma).has_value())
+        return nullptr;
 
     auto End = parseExpression();
     if (!End)
@@ -154,21 +199,39 @@ std::unique_ptr<BaseNode> Parser::parseFor() {
                                         std::move(Step), std::move(Body));
 }
 
-static llvm::Type * parseType(std::string s){
-    if(s[0] == '*')
-        return llvm::PointerType::get(
-            parseType(std::string(s.begin() + 1, s.end())), 0);
-    
+llvm::Type * Parser::parseType(){
+    if(this->_cToken.kind() == Token::Kind::Asterisk){
+        this->eat();
+        return llvm::PointerType::get(parseType(), 0);
+    }
+
+    if(this->_cToken.kind() != Token::Kind::Identifier){
+        std::cout << "expected type name" << std::endl;
+        return nullptr;
+    }
+
+    auto s = this->_cToken.lexeme();
+    std::cout << s << std::endl;
+
+    this->eat();
+
+    if(s == "u8")  return llvm::Type::getInt8Ty(TheContext);
+    if(s == "u16") return llvm::Type::getInt16Ty(TheContext);
+    if(s == "u32") return llvm::Type::getInt32Ty(TheContext);
+    if(s == "u64") return llvm::Type::getInt64Ty(TheContext);
+
     if(s == "i8")  return llvm::Type::getInt8Ty(TheContext);
     if(s == "i16") return llvm::Type::getInt16Ty(TheContext);
     if(s == "i32") return llvm::Type::getInt32Ty(TheContext);
     if(s == "i64") return llvm::Type::getInt64Ty(TheContext);
+
     if(s == "f32") return llvm::Type::getFloatTy(TheContext);
     if(s == "f64") return llvm::Type::getDoubleTy(TheContext);
 
-    auto f = NamedStructures.find(s);
+    auto f = NamedStructures.find(std::string(s));
+
     if(f != NamedStructures.end())
-        return NamedStructures[s];
+        return NamedStructures[std::string(s)];
 
     return nullptr;
 }
@@ -236,13 +299,8 @@ std::unique_ptr<BaseNode> Parser::parseStruct() {
         if(!this->expectNext(Token::Kind::Colon).has_value())
             return nullptr;
 
-        if(this->_cToken.kind() != Token::Kind::Identifier)
-            return LogError("expected Identifier in struct");
-        {
-            auto s = std::string(this->_cToken.lexeme());
-            body.push_back({field_name, parseType(s)});
-        }
-        this->eat();
+        
+        body.push_back({field_name, parseType()});
 
         if(!this->expectNext(Token::Kind::Semicolon).has_value())
             return nullptr;
@@ -273,9 +331,11 @@ std::unique_ptr<BaseNode> Parser::parsePrimary() {
 }
 
 std::unique_ptr<BaseNode> Parser::parseUnary() {
-    if (!((this->_cToken.kind() >= Token::Kind::LessThan) && (this->_cToken.kind() <= Token::Kind::Slash) || 
-        this->_cToken.kind() == Token::Kind::Return)
-        )
+    if (!(
+        (this->_cToken.kind() >= Token::Kind::LessThan) && 
+        (this->_cToken.kind() <= Token::Kind::Slash) || 
+        this->_cToken.kind() == Token::Kind::Return
+        ))
         return parsePrimary();
 
     // If this is a unary operator, read it.
@@ -293,7 +353,7 @@ int Parser::GetTokPrecedence(Token tok) {
      tok.kind() == Token::Kind::Equal))
         return -1;
 
-    int TokPrec = this->_bOp[std::string(tok.lexeme())];
+    int TokPrec = this->_bOp[tok.lexeme()];
     if (TokPrec <= 0)
         return -1;
     return TokPrec;
@@ -347,16 +407,10 @@ std::unique_ptr<PrototypeNode> Parser::parsePrototype() {
 
     std::string function_name;
 
-    switch (this->_cToken.kind()) {
-        default:
-            return LogErrorP("Expected function name in prototype");
-        case Token::Kind::End:
-            return nullptr;
-        case Token::Kind::Identifier:
+    if(this->_cToken.kind() == Token::Kind::Identifier){
             function_name = std::string(this->_cToken.lexeme());
             this->eat();
-            break;
-    }
+    }else return nullptr;
 
     if(!this->expectNext(Token::Kind::LeftParen, "in prototype").has_value())
        return nullptr;
@@ -367,17 +421,16 @@ std::unique_ptr<PrototypeNode> Parser::parsePrototype() {
     {
 
         auto _a = (this->_cToken.lexeme());
+        this->eat();
 
-        if(this->eat().kind() == Token::Kind::Colon){
-            this->eat();
+        if(this->expectNext(Token::Kind::Colon).has_value()){
 
             ArgNames.push_back(
                 std::make_pair<std::string, llvm::Type * >(
                     std::string(_a),
-                    parseType(std::string(this->_cToken.lexeme()))
+                    parseType()
                     ));
         }
-        this->eat();
     }
 
     if(!this->expectNext(Token::Kind::RightParen, "in prototype").has_value())
@@ -386,19 +439,22 @@ std::unique_ptr<PrototypeNode> Parser::parsePrototype() {
     llvm::Type * Ret_Type = nullptr;
 
 
-    if (this->_cToken.kind() == Token::Kind::Minus)
-        if(this->eat().kind() == Token::Kind::GreaterThan)
-            Ret_Type = parseType(std::string(this->eat().lexeme()));
-        else return LogErrorP("Invalid type of function");
+    if (this->expectNext(Token::Kind::Cum).has_value())
+            Ret_Type = parseType();
+    else    Ret_Type = llvm::Type::getVoidTy(TheContext);
 
-
-    this->eat();
+    
 
     return std::make_unique<PrototypeNode>(function_name, ArgNames, Ret_Type);
 }
 
+std::unique_ptr<PrototypeNode>  Parser::parseExtern() {
+    this->expectNext(Token::Kind::Extern);
+    return this->parsePrototype();
+}
+
 std::unique_ptr<FunctionNode> Parser::parseDef() {
-    this->eat();
+    this->expectNext(Token::Kind::Def);
 
     auto Proto = parsePrototype();
     if (!Proto)

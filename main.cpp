@@ -62,20 +62,17 @@ static void HandleStruct(Parser * parser) {
   } else parser->eat();
 }
 
-/*
+
 static void HandleExtern(Parser * parser) {
-  if (auto ProtoAST = ParseExtern()) {
+  if (auto ProtoAST = parser->parseExtern()) {
     if (auto *FnIR = ProtoAST->codegen()) {
       fprintf(stderr, "Read extern: ");
       FnIR->print(errs());
       fprintf(stderr, "\n");
       FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
     }
-  } else {
-    // Skip token for error recovery.
-    getNextToken();
-  }
-}*/
+  } else parser->eat();
+}
 
 
 static void HandleTopLevelExpression(Parser * parser) {
@@ -96,7 +93,7 @@ static void MainLoop(Parser * parser) {
       HandleDefinition(parser);
       break;
     case Token::Kind::Extern:
-     // HandleExtern(parser);
+      HandleExtern(parser);
       break;
     case Token::Kind::Struct:
       HandleStruct(parser);
@@ -109,6 +106,8 @@ static void MainLoop(Parser * parser) {
 }
 
 int main() {
+
+  // Nothing to see here... for a while
 
   return 0;
 }
