@@ -22,14 +22,14 @@ execute_process(COMMAND llvm-config --system-libs OUTPUT_VARIABLE SYS_LIBS)
 execute_process(COMMAND llvm-config --ldflags OUTPUT_VARIABLE LDF)
 
 
-string(STRIP ${LIBS} LIBS)
-string(STRIP ${SYS_LIBS} SYS_LIBS)
-string(STRIP ${LDF} LDF)
+string(STRIP "${LIBS}" LIBS)
+string(STRIP "${SYS_LIBS}" SYS_LIBS)
+string(STRIP "${LDF}" LDF)
 
 link_libraries(${LIBS} ${SYS_LIBS} ${LDF})
 
 execute_process(COMMAND llvm-config --cxxflags OUTPUT_VARIABLE CMAKE_CXX_FLAGS)
-string(STRIP ${CMAKE_CXX_FLAGS} CMAKE_CXX_FLAGS)
+string(STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
 
 # Now build our tools
 add_executable(GachiC 
@@ -50,6 +50,7 @@ add_executable(GachiC
                 AST/FunctionNode.cpp
                 AST/BlockNode.cpp
                 AST/StructNode.cpp
+                AST/ArrayNode.cpp
                 )
 
 

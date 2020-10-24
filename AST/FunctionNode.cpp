@@ -3,7 +3,7 @@
 #include "../defs_ast.h"
 #include "../states.h"
 
-llvm::Function *FunctionNode::codegen() {
+llvm::Function * FunctionNode::codegen(bool is_lvalue) {
   auto &P = *Proto;
   FunctionProtos[Proto->getName()] = std::move(Proto);
   llvm::Function *TheFunction = getFunction(P.getName());
@@ -29,6 +29,7 @@ llvm::Function *FunctionNode::codegen() {
 
   if(!Body){
     std::cout << "What the hell" << std::endl;
+    return nullptr;
   }
 
   if (llvm::Value * RetVal = Body->codegen()) {

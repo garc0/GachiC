@@ -13,5 +13,5 @@ public:
               std::unique_ptr<BaseNode> Body)
       : Proto(std::move(Proto)), Body(std::move(Body)) {}
 
-  llvm::Function *codegen();
+  llvm::Function * codegen(bool is_lvalue = false);
 };

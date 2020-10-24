@@ -16,7 +16,7 @@ public:
               llvm::Type *  Ret_Type = nullptr)
       : Name(std::move(Name)), Args(std::move(Args)), RetType(Ret_Type) {}
 
-  llvm::Function *codegen();
+  llvm::Function * codegen(bool is_lvalue = false);
   const std::string &getName() const { return Name; }
 
   auto getFnName() const {

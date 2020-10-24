@@ -29,6 +29,10 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
+
+#include <fstream>
+
 #include <system_error>
 #include <utility>
 #include <vector>
@@ -39,14 +43,22 @@
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
 
+#include "Utils/clipp.h"
 
 static void HandleDefinition(Parser * parser) {
 
   if (auto FnAST = parser->parseDef()) {
     if (auto *FnIR = FnAST->codegen()) {
-      fprintf(stderr, "Read function definition:\n");
       FnIR->print(errs());
-      fprintf(stderr, "\n");
+    }
+  } else parser->eat();
+}
+
+static void HandleMainDef(Parser * parser) {
+
+  if (auto FnAST = parser->parseMain()) {
+    if (auto *FnIR = FnAST->codegen()) {
+      FnIR->print(errs());
     }
   } else parser->eat();
 }
@@ -55,20 +67,15 @@ static void HandleStruct(Parser * parser) {
 
   if (auto FnAST = parser->parseStruct()) {
     if (auto *FnIR = (llvm::Type*)FnAST->codegen()) {
-      fprintf(stderr, "Read struct definition:\n");
       FnIR->print(errs());
-      fprintf(stderr, "\n");
     }
   } else parser->eat();
 }
 
-
 static void HandleExtern(Parser * parser) {
   if (auto ProtoAST = parser->parseExtern()) {
     if (auto *FnIR = ProtoAST->codegen()) {
-      fprintf(stderr, "Read extern: ");
       FnIR->print(errs());
-      fprintf(stderr, "\n");
       FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
     }
   } else parser->eat();
@@ -92,6 +99,9 @@ static void MainLoop(Parser * parser) {
     case Token::Kind::Def:
       HandleDefinition(parser);
       break;
+    case Token::Kind::Master:
+      HandleMainDef(parser);
+      break;
     case Token::Kind::Extern:
       HandleExtern(parser);
       break;
@@ -105,9 +115,168 @@ static void MainLoop(Parser * parser) {
   }
 }
 
-int main() {
+void dump_tokens(Lexer * lex){
 
-  // Nothing to see here... for a while
+  Token tok = lex->get();
+  while(tok.is_kind(Token::Kind::End)){
+    std::cout << tok.kind() << " (" << tok.lexeme() << ") \n";
+  }
+  lex->to_begin();
 
+  return;
+}
+
+void dump_ast(Parser * parser){
+
+  std::cerr << "AST dump is currently not supported" << std::endl;
+
+  return;
+}
+
+void dump_ir(){
+
+  std::cerr << "IR dump is currently not supported" << std::endl;
+
+  return;
+}
+
+int write_object_file(std::string o_filename, std::unique_ptr<llvm::Module> o_Module){
+   
+  using namespace llvm;
+
+  // Initialize the target registry etc.
+  InitializeAllTargetInfos();
+  InitializeAllTargets();
+  InitializeAllTargetMCs();
+  InitializeAllAsmParsers();
+  InitializeAllAsmPrinters();
+
+  auto TargetTriple = sys::getDefaultTargetTriple();
+  o_Module->setTargetTriple(TargetTriple);
+
+  std::string Error;
+  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+
+  if (!Target) {
+    errs() << Error;
+    return -1;
+  }
+
+  auto CPU = "generic";
+  auto Features = "";
+
+  TargetOptions opt;
+  auto RM = Optional<Reloc::Model>();
+  auto TheTargetMachine =
+      Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+
+  o_Module->setDataLayout(TheTargetMachine->createDataLayout());
+
+  std::error_code EC;
+  raw_fd_ostream dest(o_filename, EC, sys::fs::OF_None);
+
+  if (EC) {
+    errs() << "Could not open file: " << EC.message();
+    return -1;
+  }
+
+  legacy::PassManager pass;
+  auto FileType = CGFT_ObjectFile;
+
+  if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
+    errs() << "TheTargetMachine can't emit a file of this type";
+    return -1;
+  }
+
+  pass.run(*o_Module);
+  dest.flush();
+
+  return 0;
+}
+
+int main(int argc, char* argv[]) {
+
+  bool  to_dump = false,
+
+        d_token = false,
+        d_ast   = false,
+        d_ir    = false;
+
+  std::vector<std::string> filenames;
+
+  {
+    using namespace clipp;
+
+    auto cli = (
+      option("-d", "--dump").set(to_dump) & 
+        (
+          required("tokens").set(d_token) |
+          required("ast").set(d_ast) //|
+          //required("ir").set(d_ir)
+        ),
+      option("-c", "--compile") & values("filenames", filenames) 
+    );
+
+    if(!parse(argc, argv, cli)){
+      std::cout << clipp::make_man_page(cli, argv[0]);
+      return -1;
+    }
+
+  }
+
+  if(filenames.size() == 0){
+    std::cerr << "i need a source files!" << std::endl;
+    return -1;
+  }
+
+  for(auto &module_name : filenames){
+
+    auto lex = std::make_unique<Lexer>();
+
+    {
+      std::ifstream in(module_name);
+        
+      if(in.is_open()){
+        std::string line;
+
+          while(getline(in, line))
+            lex->analyze(line);
+
+        lex->set_end();
+
+        in.close();
+      }else{
+        std::cout << "cannot open input file" << std::endl;
+        return -1;
+      }
+    }
+
+    if(to_dump && d_token) dump_tokens(lex.get());
+
+    auto parser = std::make_unique<Parser>(std::move(lex));
+
+    if(to_dump && d_ast) dump_ast(parser.get()); 
+
+    if(to_dump && d_ir) dump_ir(); 
+
+    {
+      FunctionProtos.clear();
+
+      StructFields.clear();
+
+      NamedValues.clear();
+      NamedStructures.clear();
+      
+      TheModule = std::make_unique<Module>(module_name, TheContext);
+
+      MainLoop(parser.get());
+
+      std::size_t dot_pos = module_name.find_last_of('.'); 
+
+      if(write_object_file(module_name.substr(0, dot_pos) + ".o", std::move(TheModule)) != 0)
+        return -1;
+    }
+  }
+  
   return 0;
 }

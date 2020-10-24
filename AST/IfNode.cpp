@@ -2,7 +2,7 @@
 
 #include "../states.h"
 
-llvm::Value *IfNode::codegen() {
+llvm::Value * IfNode::codegen(bool is_lvalue) {
 
   llvm::Value *CondV = Cond->codegen();
   if (!CondV)

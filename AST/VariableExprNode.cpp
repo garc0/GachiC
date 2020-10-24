@@ -2,7 +2,7 @@
 
 #include "../states.h"
 
-llvm::Value * VariableExprNode::codegen() {
+llvm::Value * VariableExprNode::codegen(bool is_lvalue) {
   
   auto f = NamedValues.find(Name);
   if(f == NamedValues.end()){
@@ -17,6 +17,7 @@ llvm::Value * VariableExprNode::codegen() {
     return nullptr;
   }
 
-  // Load the value.
-  return Builder.CreateLoad(V, Name.c_str());
+  if(is_lvalue) return V;
+
+  return Builder.CreateLoad(V);
 }

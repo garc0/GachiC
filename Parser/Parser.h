@@ -64,6 +64,8 @@ public:
     std::unique_ptr<PrototypeNode>  parsePrototype();
     std::unique_ptr<PrototypeNode>  parseExtern();
     std::unique_ptr<FunctionNode>   parseDef();
+
+    std::unique_ptr<FunctionNode>   parseMain();
     
     std::unique_ptr<BaseNode>       parseStruct();
 
@@ -84,7 +86,8 @@ private:
     std::unique_ptr<BlockNode> _cBlock = nullptr;
 
     std::map<std::string_view, uint16_t> _bOp = {
-        {"=",   2},
+        {".",   2 },
+        {"=",   2 },
         {"<",   20},
         {">",   20},
         {"+",   40},
@@ -100,6 +103,7 @@ private:
     std::unique_ptr<BaseNode> parseBlock();
 
     std::unique_ptr<BaseNode> parseIdentifier();
+    std::unique_ptr<BaseNode> parseArray();
     std::unique_ptr<BaseNode> parseVar();
     std::unique_ptr<BaseNode> parseFor();
     std::unique_ptr<BaseNode> parseIf();

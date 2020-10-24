@@ -6,10 +6,10 @@
 
 template<typename T>
 inline bool is_in_range(T v){
-    return (v > std::numeric_limits<T>::lowest()) && (v < std::numeric_limits<T>::max());
+    return (v >= std::numeric_limits<T>::lowest()) && (v <= std::numeric_limits<T>::max());
 }
 
-llvm::Value * NumberExprNode::codegen(){
+llvm::Value * NumberExprNode::codegen(bool is_lvalue){
     bool is_float = this->_val.find('.') != std::string::npos;
 
     if(is_float){

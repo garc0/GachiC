@@ -4,7 +4,7 @@
 
 #include "../defs_ast.h"
 
-llvm::Function *PrototypeNode::codegen() {
+llvm::Function * PrototypeNode::codegen(bool is_lvalue) {
   std::vector<llvm::Type *> f_args;
   for(auto i: this->Args){
     f_args.push_back(std::get<1>(i));

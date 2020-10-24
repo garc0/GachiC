@@ -10,5 +10,5 @@ public:
   UnaryExprNode(Token Opcode, std::unique_ptr<BaseNode> Operand)
       : Opcode(Opcode), Operand(std::move(Operand)) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value *codegen(bool is_lvalue = false) override;
 };

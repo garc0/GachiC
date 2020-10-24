@@ -7,7 +7,7 @@
 
 #include "../defs_ast.h"
 
-llvm::Value * VarExprNode::codegen() {
+llvm::Value * VarExprNode::codegen(bool is_lvalue ) {
   llvm::Function * TheFunction = Builder.GetInsertBlock()->getParent();
 
   llvm::Value * ValToRet;

@@ -14,7 +14,7 @@ public:
             {}
     ~StructNode(){}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(bool is_lvalue = false) override;
 private:
     std::vector<std::pair<std::string, llvm::Type *>> _elements;
     std::string _struct_name;
@@ -33,6 +33,6 @@ public:
     _elements(std::move(elems)
     ) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value *codegen(bool is_lvalue = false) override;
   const std::string &getName() const { return Name; }
 };

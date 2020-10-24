@@ -47,6 +47,7 @@
 #include "AST/FunctionNode.h"
 #include "AST/BlockNode.h"
 #include "AST/StructNode.h"
+#include "AST/ArrayNode.h"
 
 #include "states.h"
 

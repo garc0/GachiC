@@ -13,5 +13,5 @@ public:
       : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
         Step(std::move(Step)), Body(std::move(Body)) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value * codegen(bool is_lvalue = false) override;
 };

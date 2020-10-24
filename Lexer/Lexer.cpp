@@ -55,6 +55,8 @@ inline Token Lexer::getAtom() noexcept{
             return atom(Token::Kind::Modulo);
         case '=':
             return atom(Token::Kind::Equal);
+        case '&':
+            return atom(Token::Kind::Ampersand);
         case '+':
             return atom(Token::Kind::Plus);
         case '-':
@@ -107,13 +109,13 @@ std::optional<Token::Kind> stotok(std::string identifier){
         {"in", Token::Kind::In},
         {"cumming", Token::Kind::Return},
         {"cum", Token::Kind::Cum},
+        {"master", Token::Kind::Master},
         {"extern", Token::Kind::Extern},
+        {"array", Token::Kind::Array},
         {"if", Token::Kind::If},
         {"else", Token::Kind::Else},
         {"for", Token::Kind::For},
         {"struct", Token::Kind::Struct},
-        {"typedef_b", Token::Kind::Binary},
-        {"typedef_u", Token::Kind::Unary}
     };
 
     auto f = keys.find(identifier);

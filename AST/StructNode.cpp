@@ -3,8 +3,9 @@
 #include <vector>
 
 #include "../states.h"
+#include "../defs_ast.h"
 
-llvm::Value * StructNode::codegen(){
+llvm::Value * StructNode::codegen(bool is_lvalue){
     
     auto struct_val = llvm::StructType::create(TheContext, this->_struct_name.c_str());
 
@@ -23,7 +24,7 @@ llvm::Value * StructNode::codegen(){
     return (llvm::Value * )struct_val;
 }
 
-llvm::Value * StructExprNode::codegen(){
+llvm::Value * StructExprNode::codegen(bool is_lvalue){
 
     if(NamedStructures.find(this->Name) == NamedStructures.end()){
         std::cout << "Invalid structure name" << std::endl;
@@ -32,8 +33,23 @@ llvm::Value * StructExprNode::codegen(){
 
     std::vector<llvm::Constant *> fields;
 
-    for(auto & i : this->_elements)
+    for(auto & i : this->_elements){
         fields.push_back((llvm::Constant *)(i.second->codegen()));
-    
-    return llvm::ConstantStruct::get((llvm::StructType*)NamedStructures[this->Name], llvm::ArrayRef<llvm::Constant *>(fields.data(), fields.size()));
+    }
+
+    auto const_struct = llvm::ConstantStruct::get(
+        (llvm::StructType*)NamedStructures[this->Name], 
+        llvm::ArrayRef<llvm::Constant *>(fields.data(), fields.size())
+        );
+
+    //llvm::Function * TheFunction = Builder.GetInsertBlock()->getParent();
+   // llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, "", NamedStructures[this->Name]);
+
+    //auto memcpy_b = Builder.CreateMemCpy(Alloca, , const_struct, , llvm::ConstantInt::get(TheContext, llvm::APInt(sizeof(int8_t) + sizeof(int16_t)));
+
+    //Builder.CreateStore(const_struct, Alloca);
+
+
+    //auto ptr_to_int = Builder.CreatePtrToInt(Alloca, llvm::Type::getInt64Ty(TheContext));
+    return const_struct;
 }

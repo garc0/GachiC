@@ -3,18 +3,18 @@
 #include "../defs_ast.h"
 
 
-llvm::Value *BinaryExprNode::codegen() {
+llvm::Value * BinaryExprNode::codegen(bool is_lvalue) {
     if (Op.kind() == Token::Kind::Equal) {
-        VariableExprNode *LHSE = dynamic_cast<VariableExprNode *>(LHS.get());
-        if (!LHSE)
-            return LogErrorV("destination of '=' must be a variable");
-        
+
+        llvm::Value * Variable = LHS->codegen(true);    
+
+        if(!Variable)
+            return nullptr;
+
         llvm::Value * Val = RHS->codegen();
         if (!Val)
             return nullptr;
 
-        // Look up the name.
-        llvm::Value * Variable = std::get<0>(NamedValues[LHSE->getName()]);
         if (!Variable)
             return LogErrorV("Unknown variable name\n");
 
@@ -22,8 +22,59 @@ llvm::Value *BinaryExprNode::codegen() {
         return Val;
     }
 
-    llvm::Value *L = LHS->codegen();
-    llvm::Value *R = RHS->codegen();
+
+    if(Op.kind() == Token::Kind::Dot){
+        
+        llvm::Value * variable = LHS->codegen(true);
+
+        if (!variable)
+            return LogErrorV("Unknown variable name\n");
+
+        llvm::Type * type_struct = variable->getType();
+
+        llvm::Type * type_struct_p = type_struct;
+
+        if(type_struct->isPointerTy()){
+            type_struct_p = type_struct->getPointerElementType();
+            std::cout << "Pointer found" << std::endl;
+        }
+
+        std::string type_str;
+        llvm::raw_string_ostream rso(type_str);
+        type_struct->print(rso);
+        //type_struct_p->print(rso);
+        std::cout<<rso.str() << std::endl;;
+
+
+        if(StructFields.find(type_struct_p) == StructFields.end())
+            return LogErrorV("Not found a struct def");
+
+        auto struct_def = StructFields[type_struct_p];
+
+
+        VariableExprNode * RHSE = static_cast<VariableExprNode *>(RHS.get());
+        if (!RHSE)
+            return LogErrorV("Oops, what the hell\n");
+
+        auto name_var = RHSE->getName();
+
+        std::size_t i = 0;
+
+        while(i < struct_def.size() && name_var != struct_def[i].first) i++;
+
+        if(i == struct_def.size())
+            return LogErrorV("Not found a field of structure");
+        
+        llvm::Value * indexList[2] = {llvm::ConstantInt::get(TheContext, llvm::APInt(32, 0)), llvm::ConstantInt::get(TheContext, llvm::APInt(32, i))};
+
+        auto elem_ptr = Builder.CreateGEP(variable, indexList);
+
+        if(is_lvalue) return elem_ptr;
+        return Builder.CreateLoad(elem_ptr);
+    }
+
+    llvm::Value * L = LHS->codegen();
+    llvm::Value * R = RHS->codegen();
     if (!L || !R)  return nullptr;
 
     if(Op.kind() == Token::Kind::Semicolon)
@@ -31,10 +82,6 @@ llvm::Value *BinaryExprNode::codegen() {
 
     if(L->getType() != R->getType()){
       std::cout << "L->getType() != R->getType()" << std::endl;
-    }
-
-    if(L->getType()->isPointerTy()){
-
     }
 
     if(!L->getType()->isFloatingPointTy()){

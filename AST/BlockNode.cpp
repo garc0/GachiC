@@ -2,7 +2,7 @@
 
 #include "../states.h"
 
-llvm::Value * BlockNode::codegen(){
+llvm::Value * BlockNode::codegen(bool is_lvalue){
     
 
     //Builder.GetInsertBlock()->Create(TheContext, "", Builder.GetInsertBlock()->getParent());

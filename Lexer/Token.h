@@ -26,7 +26,9 @@ public:
         Cum,
 
         Def,
+        Master,
         Struct,
+        Array,
         Extern,
 
         If,
@@ -50,6 +52,7 @@ public:
         Modulo,
         Equal,
         DoubleEqual,
+        Ampersand,
         Plus,
         Minus,
         Asterisk,
@@ -90,26 +93,26 @@ public:
         return is_kind(k1) || is_one_of(k2, ks...);
     }
 
-    std::string_view lexeme() const noexcept { return m_lexeme; }
+    std::string lexeme() const noexcept { return m_lexeme; }
 
-    void lexeme(std::string_view lexeme) noexcept {
+    void lexeme(std::string lexeme) noexcept {
         m_lexeme = std::move(lexeme);
     }
 
 private:
     Kind             m_kind{};
-    std::string_view m_lexeme{};
+    std::string     m_lexeme{};
 };
 
 static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
     static const char * const names[]{
             "Number", "Identifier",
             "Var", "In", "Cum",
-            "Def", "Struct", "Extern", 
+            "Def", "Master", "Struct", "Array", "Extern", 
             "If", "Else", "For",
             "Binary", "Unary", 
             "LeftParen", "RightParen", "LeftSquare", "RightSquare", "LeftCurly", "RightCurly",
-            "LessThan", "GreaterThan", "Modulo", "Equal", "DoubleEqual", "Plus", "Minus", "Asterisk", "Slash", 
+            "LessThan", "GreaterThan", "Modulo", "Equal", "DoubleEqual", "Ampersand", "Plus", "Minus", "Asterisk", "Slash", 
             "Semicolon",   "Hash", "Dot", "Comma", "Colon",      
             "SingleQuote", "DoubleQuote", "Comment", "Return", "Pipe", "End",
             "Unexpected",

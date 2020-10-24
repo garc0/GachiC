@@ -26,11 +26,22 @@
 
 #include <iostream>
 
+namespace Node{
+  enum class Type{
+    BaseNode,
+    NumberNode,
+    VariableNode,
+    BinaryNode,
+    UnaryNode,
+
+  };
+};
+
 class BaseNode {
 public:
   virtual ~BaseNode() = default;
 
-  virtual llvm::Value * codegen(){
+  virtual llvm::Value * codegen(bool is_lvalue = false){
     return nullptr;
   }
 };

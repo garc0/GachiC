@@ -12,6 +12,6 @@ class VariableExprNode : public BaseNode {
 public:
   VariableExprNode(const std::string &Name) : Name(Name) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value *codegen(bool is_lvalue = false) override;
   const std::string &getName() const { return Name; }
 };

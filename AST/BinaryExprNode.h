@@ -13,5 +13,5 @@ public:
                 std::unique_ptr<BaseNode> RHS)
       : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value * codegen(bool is_lvalue = false) override;
 };

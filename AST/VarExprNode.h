@@ -13,5 +13,5 @@ public:
       std::vector<std::pair<std::string, std::unique_ptr<BaseNode>>> VarNames)
       : l_block(block), VarNames(std::move(VarNames)) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value * codegen(bool is_lvalue = false) override;
 };

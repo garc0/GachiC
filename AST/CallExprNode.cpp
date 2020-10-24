@@ -5,7 +5,7 @@
 #include "../defs_ast.h"
 
 
-llvm::Value *CallExprNode::codegen() {
+llvm::Value * CallExprNode::codegen(bool is_lvalue) {
   // Look up the name in the global module table.
   llvm::Function *CalleeF = getFunction(Callee);
   if (!CalleeF)

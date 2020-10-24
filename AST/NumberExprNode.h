@@ -10,5 +10,5 @@ private:
 public:
   NumberExprNode(std::string Val) : _val(Val) {}
 
-  llvm::Value *codegen() override;
+  llvm::Value *codegen(bool is_lvalue = false) override;
 };

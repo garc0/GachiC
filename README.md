@@ -20,7 +20,9 @@ Gachimuchi-themed programming language (Work in progress)
    - 2019 (version 16)
 * LLVM, Clang, LLDF libs == 10.
 
-#### Instructions
+* Or you can use wsl(See POSIX)
+
+### Instructions
 
 ##### POSIX
 

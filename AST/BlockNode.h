@@ -13,5 +13,5 @@ public:
 
     std::vector<std::unique_ptr<BaseNode>> l;
 
-    llvm::Value * codegen() override;
+    llvm::Value * codegen(bool is_lvalue = false) override;
 };

@@ -18,23 +18,42 @@
 
 class Lexer {
 public:
-    Lexer(const char* s) noexcept : _s(s) {
-        auto tok = parse();
-        _tokens.push_back(tok);
-        while(tok.kind() != Token::Kind::End)
-            _tokens.push_back(tok = parse());
-        
+
+    Lexer() noexcept {
         _it = _tokens.begin();
     }
 
-    Token get() const{ return *_it;}
+    void analyze(std::string_view s){
+        if(s == "") return;
+        this->_s = std::move(s);
+        this->_i = 0;
+
+        auto tok = parse();
+
+        _tokens.push_back(tok);
+        while(tok.kind() != Token::Kind::End && this->_i < this->_s.size())
+            _tokens.push_back(tok = parse());
+
+        _it = _tokens.begin();
+
+        return;
+    }
+
+    Token get() const { return *_it; }
+
     Token next(){
         if((*_it).kind() == Token::Kind::End)
             return *_it;
         return *_it++;
     }
 
-    Lexer() noexcept  {}
+    Token to_begin(){
+        return *(_it = _tokens.begin());
+    }
+
+    void set_end(){
+        _tokens.push_back(Token());
+    }
 
 private:
     Token parse() noexcept;
@@ -50,8 +69,7 @@ private:
     std::vector<Token> _tokens;
     std::vector<Token>::iterator _it;
 
-    // raw pointer
-    const char * _s = nullptr;
+    std::string_view _s;
     std::size_t _i = 0;
 };
 
