@@ -2,7 +2,7 @@
 
 #include "../defs_ast.h"
 
-llvm::Value *UnaryExprNode::codegen(bool is_lvalue) {
+llvm::Value * UnaryExprNode::codegen(bool is_lvalue) {
 
   if(this->Opcode.kind() == Token::Kind::Return){
     llvm::Value * OperandV = Operand->codegen();

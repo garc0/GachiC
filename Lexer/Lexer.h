@@ -12,6 +12,7 @@
 #include <list>
 #include <iterator>
 
+#include <vector>
 #include <optional>
 
 #include "Token.h"
@@ -61,6 +62,7 @@ private:
     Token identifier() noexcept;
     Token number() noexcept;
     Token slash_or_comment() noexcept;
+    Token parse_string();
 
     Token getAtom() noexcept;
     Token atom(Token::Kind) noexcept;

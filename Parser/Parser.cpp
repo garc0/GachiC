@@ -211,17 +211,17 @@ llvm::Type * Parser::parseType(){
     }
 
     std::string s = this->_cToken.lexeme();
-    
-    std::cout << s << std::endl;
 
     this->eat();
+
+    if(s == "bool") return llvm::Type::getInt1Ty(TheContext);
 
     if(s == "u8")  return llvm::Type::getInt8Ty(TheContext);
     if(s == "u16") return llvm::Type::getInt16Ty(TheContext);
     if(s == "u32") return llvm::Type::getInt32Ty(TheContext);
     if(s == "u64") return llvm::Type::getInt64Ty(TheContext);
 
-    if(s == std::string("i8"))  return llvm::Type::getInt8Ty(TheContext);
+    if(s == "i8")  return llvm::Type::getInt8Ty(TheContext);
     if(s == "i16") return llvm::Type::getInt16Ty(TheContext);
     if(s == "i32") return llvm::Type::getInt32Ty(TheContext);
     if(s == "i64") return llvm::Type::getInt64Ty(TheContext);
@@ -333,6 +333,60 @@ std::unique_ptr<BaseNode> Parser::parseArray(){
     return std::make_unique<ArrayInitNode>(std::move(body));
 }
 
+std::unique_ptr<BaseNode> Parser::parseChar(){
+    
+    this->expectNext(Token::Kind::SingleQuote);
+
+    uint8_t c = this->_cToken.lexeme()[0];
+
+    this->eat();
+
+    if(!this->expectNext(Token::Kind::SingleQuote).has_value())
+    return nullptr;
+
+    return std::make_unique<NumberExprNode>(std::to_string(int(c)));
+}
+
+std::unique_ptr<BaseNode> Parser::parseString(){
+    
+    this->expectNext(Token::Kind::DoubleQuote);
+
+    std::vector<std::unique_ptr<BaseNode>> body;
+
+    while(this->_cToken.kind() != Token::Kind::DoubleQuote){
+        uint8_t c = this->_cToken.lexeme()[0];
+        this->eat();
+
+        if(c == '\\'){
+            c = this->_cToken.lexeme()[0];
+            switch(c){
+                case 'n':
+                    c = '\n';
+                    break;
+                case 't':
+                    c = '\t';
+                    break;  
+                case '\\':
+                    c = '\\';
+                    break;  
+                case '0':
+                    c = '\0';
+                    break;    
+            }
+
+            this->eat();
+        }
+
+        auto E = std::make_unique<NumberExprNode>(std::to_string(int(c)));
+
+        body.push_back(std::move(E));
+    }
+
+    this->expectNext(Token::Kind::DoubleQuote);
+
+    return std::make_unique<ArrayInitNode>(std::move(body));
+}
+
 std::unique_ptr<BaseNode> Parser::parsePrimary() {
     switch (this->_cToken.kind()) {
         default:
@@ -341,6 +395,8 @@ std::unique_ptr<BaseNode> Parser::parsePrimary() {
 
 
         case Token::Kind::Identifier:   return parseIdentifier();
+        case Token::Kind::SingleQuote:  return parseChar();
+        case Token::Kind::DoubleQuote:  return parseString();
         case Token::Kind::LeftCurly:    return parseBlock();
         case Token::Kind::LeftParen:    return parseParen();
         case Token::Kind::Number:       return parseNumber();

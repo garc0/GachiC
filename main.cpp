@@ -45,81 +45,95 @@
 
 #include "Utils/clipp.h"
 
-static void HandleDefinition(Parser * parser) {
+static llvm::Value * HandleDefinition(Parser * parser) {
 
   if (auto FnAST = parser->parseDef()) {
-    if (auto *FnIR = FnAST->codegen()) {
-      FnIR->print(errs());
-    }
+    return FnAST->codegen();
   } else parser->eat();
+
+   return nullptr;
 }
 
-static void HandleMainDef(Parser * parser) {
+static llvm::Value * HandleMainDef(Parser * parser) {
 
   if (auto FnAST = parser->parseMain()) {
-    if (auto *FnIR = FnAST->codegen()) {
-      FnIR->print(errs());
-    }
+    return FnAST->codegen();
   } else parser->eat();
+
+   return nullptr;
 }
 
-static void HandleStruct(Parser * parser) {
+static llvm::Value * HandleStruct(Parser * parser) {
 
   if (auto FnAST = parser->parseStruct()) {
-    if (auto *FnIR = (llvm::Type*)FnAST->codegen()) {
-      FnIR->print(errs());
-    }
+    return FnAST->codegen();
   } else parser->eat();
+
+  return nullptr;
 }
 
-static void HandleExtern(Parser * parser) {
+static llvm::Value * HandleExtern(Parser * parser) {
   if (auto ProtoAST = parser->parseExtern()) {
     if (auto *FnIR = ProtoAST->codegen()) {
-      FnIR->print(errs());
       FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
+
+      return FnIR;
     }
   } else parser->eat();
+
+  return nullptr;
 }
 
 
-static void HandleTopLevelExpression(Parser * parser) {
+static llvm::Value * HandleTopLevelExpression(Parser * parser) {
   if (auto FnAST = parser->parseTopLevelExpr()) {
-    FnAST->codegen();
+    return FnAST->codegen();
   } else parser->eat();
+
+  return nullptr;
 }
 
-static void MainLoop(Parser * parser) {
+static void MainLoop(Parser * parser, bool d) {
   while (true) {
+
+    llvm::Value * e = nullptr;
     switch ((parser->getCurrentToken()).kind()) {
-    case Token::Kind::End:
-      return;
-    case Token::Kind::Semicolon:
-      parser->eat();
-      break;
-    case Token::Kind::Def:
-      HandleDefinition(parser);
-      break;
-    case Token::Kind::Master:
-      HandleMainDef(parser);
-      break;
-    case Token::Kind::Extern:
-      HandleExtern(parser);
-      break;
-    case Token::Kind::Struct:
-      HandleStruct(parser);
-      break;
-    default:
-      HandleTopLevelExpression(parser);
-      break;
+      case Token::Kind::End:
+        return;
+      case Token::Kind::Semicolon:
+        parser->eat();
+        break;
+      case Token::Kind::Def:
+        e = HandleDefinition(parser);
+        break;
+      case Token::Kind::Master:
+        e = HandleMainDef(parser);
+        break;
+      case Token::Kind::Extern:
+        e = HandleExtern(parser);
+        break;
+      case Token::Kind::Struct:
+        { 
+          auto _e = reinterpret_cast<llvm::Type*>(HandleStruct(parser));
+          if(d)
+            _e->print(errs());
+        }
+        break;
+      default:
+        HandleTopLevelExpression(parser);
+        break;
     }
+
+    if(d && e != nullptr) e->print(errs());
   }
 }
 
 void dump_tokens(Lexer * lex){
 
   Token tok = lex->get();
-  while(tok.is_kind(Token::Kind::End)){
+  while(!tok.is_kind(Token::Kind::End)){
     std::cout << tok.kind() << " (" << tok.lexeme() << ") \n";
+    tok = lex->next();
   }
   lex->to_begin();
 
@@ -211,8 +225,8 @@ int main(int argc, char* argv[]) {
       option("-d", "--dump").set(to_dump) & 
         (
           required("tokens").set(d_token) |
-          required("ast").set(d_ast) //|
-          //required("ir").set(d_ir)
+          required("ast").set(d_ast) |
+          required("ir").set(d_ir)
         ),
       option("-c", "--compile") & values("filenames", filenames) 
     );
@@ -251,13 +265,12 @@ int main(int argc, char* argv[]) {
       }
     }
 
+
     if(to_dump && d_token) dump_tokens(lex.get());
 
     auto parser = std::make_unique<Parser>(std::move(lex));
 
-    if(to_dump && d_ast) dump_ast(parser.get()); 
-
-    if(to_dump && d_ir) dump_ir(); 
+    if(to_dump && d_ast) dump_ast(parser.get());  
 
     {
       FunctionProtos.clear();
@@ -269,12 +282,20 @@ int main(int argc, char* argv[]) {
       
       TheModule = std::make_unique<Module>(module_name, TheContext);
 
-      MainLoop(parser.get());
+      MainLoop(parser.get(), to_dump && d_ir);
 
       std::size_t dot_pos = module_name.find_last_of('.'); 
 
-      if(write_object_file(module_name.substr(0, dot_pos) + ".o", std::move(TheModule)) != 0)
+      std::cout << module_name;
+
+      auto object_name = module_name.substr(0, dot_pos) + ".o";
+
+      if(write_object_file(object_name, std::move(TheModule)) != 0){
+        std::cout << " skipped" << std::endl;
         return -1;
+      }
+
+      std::cout << " >> " << object_name << std::endl;
     }
   }
   

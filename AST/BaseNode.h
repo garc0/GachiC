@@ -28,12 +28,20 @@
 
 namespace Node{
   enum class Type{
-    BaseNode,
-    NumberNode,
-    VariableNode,
-    BinaryNode,
-    UnaryNode,
-
+    Base,
+    Number,
+    Variable,
+    VarExpr,
+    Type,
+    Binary,
+    Unary,
+    IF,
+    FOR,
+    Struct,
+    Prototype,
+    Fucntion,
+    Call,
+    Block
   };
 };
 

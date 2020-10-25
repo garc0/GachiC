@@ -8,8 +8,15 @@ llvm::Value * BinaryExprNode::codegen(bool is_lvalue) {
 
         llvm::Value * Variable = LHS->codegen(true);    
 
-        if(!Variable)
+        if(!Variable){
+            std::cout << "lvalue is not valid" << std::endl;
             return nullptr;
+        }
+
+        if(!Variable->getType()->isPointerTy()){
+            std::cout << "lvalue is not valid" << std::endl;
+            return nullptr;
+        }
 
         llvm::Value * Val = RHS->codegen();
         if (!Val)
@@ -36,15 +43,7 @@ llvm::Value * BinaryExprNode::codegen(bool is_lvalue) {
 
         if(type_struct->isPointerTy()){
             type_struct_p = type_struct->getPointerElementType();
-            std::cout << "Pointer found" << std::endl;
         }
-
-        std::string type_str;
-        llvm::raw_string_ostream rso(type_str);
-        type_struct->print(rso);
-        //type_struct_p->print(rso);
-        std::cout<<rso.str() << std::endl;;
-
 
         if(StructFields.find(type_struct_p) == StructFields.end())
             return LogErrorV("Not found a struct def");
@@ -73,12 +72,15 @@ llvm::Value * BinaryExprNode::codegen(bool is_lvalue) {
         return Builder.CreateLoad(elem_ptr);
     }
 
+
+    if(Op.kind() == Token::Kind::Ass){
+
+    }
+
     llvm::Value * L = LHS->codegen();
     llvm::Value * R = RHS->codegen();
     if (!L || !R)  return nullptr;
 
-    if(Op.kind() == Token::Kind::Semicolon)
-        return Builder.getInt1(false);
 
     if(L->getType() != R->getType()){
       std::cout << "L->getType() != R->getType()" << std::endl;

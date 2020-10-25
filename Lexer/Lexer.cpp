@@ -78,7 +78,7 @@ inline Token Lexer::getAtom() noexcept{
         case '\'':
             return atom(Token::Kind::SingleQuote);
         case '"':
-            return atom(Token::Kind::DoubleQuote);
+            return parse_string();
         case '|':
             return atom(Token::Kind::Pipe);
 
@@ -110,6 +110,7 @@ std::optional<Token::Kind> stotok(std::string identifier){
         {"cumming", Token::Kind::Return},
         {"cum", Token::Kind::Cum},
         {"master", Token::Kind::Master},
+        {"ass", Token::Kind::Ass},
         {"extern", Token::Kind::Extern},
         {"array", Token::Kind::Array},
         {"if", Token::Kind::If},
@@ -166,4 +167,19 @@ Token Lexer::slash_or_comment() noexcept {
     }
     
     return Token(Token::Kind::Slash, &_s[i], 1);
+}
+
+Token Lexer::parse_string(){
+    this->_tokens.push_back(Token(Token::Kind::DoubleQuote));
+
+    auto atom = [&](Token::Kind kind) -> Token{
+        return Token(kind, &_s[_i++], 1);
+    };
+
+    this->_i++;
+
+    while(this->_s[_i] != '"')
+        this->_tokens.push_back(atom(Token::Kind::Identifier));
+
+    return atom(Token::Kind::DoubleQuote);
 }

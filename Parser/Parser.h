@@ -88,6 +88,7 @@ private:
     std::map<std::string_view, uint16_t> _bOp = {
         {".",   2 },
         {"=",   2 },
+        {"ass", 10},
         {"<",   20},
         {">",   20},
         {"+",   40},
@@ -103,6 +104,8 @@ private:
     std::unique_ptr<BaseNode> parseBlock();
 
     std::unique_ptr<BaseNode> parseIdentifier();
+    std::unique_ptr<BaseNode> parseChar();
+    std::unique_ptr<BaseNode> parseString();
     std::unique_ptr<BaseNode> parseArray();
     std::unique_ptr<BaseNode> parseVar();
     std::unique_ptr<BaseNode> parseFor();
