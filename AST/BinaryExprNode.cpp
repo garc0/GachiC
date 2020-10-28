@@ -26,7 +26,7 @@ llvm::Value * BinaryExprNode::codegen(bool is_lvalue) {
             return LogErrorV("Unknown variable name\n");
 
         Builder.CreateStore(Val, Variable);
-        return Val;
+        return Variable;
     }
 
 
@@ -126,5 +126,5 @@ llvm::Value * BinaryExprNode::codegen(bool is_lvalue) {
         }
     }
 
-    return nullptr;
+    return LogErrorV("What the hell");
 }

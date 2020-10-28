@@ -22,5 +22,5 @@ llvm::Value * CallExprNode::codegen(bool is_lvalue) {
       return nullptr;
   }
 
-  return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+  return Builder.CreateCall(CalleeF, ArgsV);
 }

@@ -170,16 +170,40 @@ Token Lexer::slash_or_comment() noexcept {
 }
 
 Token Lexer::parse_string(){
-    this->_tokens.push_back(Token(Token::Kind::DoubleQuote));
-
+    
     auto atom = [&](Token::Kind kind) -> Token{
         return Token(kind, &_s[_i++], 1);
     };
 
-    this->_i++;
+    this->_tokens.push_back(atom(Token::Kind::DoubleQuote));
 
-    while(this->_s[_i] != '"')
-        this->_tokens.push_back(atom(Token::Kind::Identifier));
+    while(this->_s[_i] != '"'){
+
+        uint8_t c = this->_s[_i];
+
+        if(c == '\\'){
+            _i++;
+            c = this->_s[_i];
+            switch(c){
+                case 'n':
+                    c = '\n';
+                    break;
+                case 't':
+                    c = '\t';
+                    break;  
+                case '\\':
+                    c = '\\';
+                    break;  
+                case '0':
+                    c = '\0';
+                    break;    
+            }
+
+        }
+
+        this->_tokens.push_back(Token(Token::Kind::Identifier, (const char*)&c, 1));
+        this->_i++;
+    }
 
     return atom(Token::Kind::DoubleQuote);
 }

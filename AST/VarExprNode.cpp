@@ -23,7 +23,7 @@ llvm::Value * VarExprNode::codegen(bool is_lvalue ) {
     } else 
       InitVal = llvm::ConstantInt::get(TheContext, llvm::APInt(64, (uint64_t)0));
 
-    ValToRet = InitVal = Init->codegen();
+    InitVal = Init->codegen();
 
     llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, "", InitVal->getType());
 
@@ -31,7 +31,7 @@ llvm::Value * VarExprNode::codegen(bool is_lvalue ) {
 
     this->l_block->OldBindings.push_back(std::get<0>(NamedValues[VarName]));
 
-    std::get<0>(NamedValues[VarName])= Alloca;
+    ValToRet = std::get<0>(NamedValues[VarName]) = Alloca;
   }
 
   this->l_block->VarNames = std::move(this->VarNames);

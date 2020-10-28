@@ -214,6 +214,9 @@ llvm::Type * Parser::parseType(){
 
     this->eat();
 
+
+    if(s == "nothing") return llvm::Type::getVoidTy(TheContext);
+
     if(s == "bool") return llvm::Type::getInt1Ty(TheContext);
 
     if(s == "u8")  return llvm::Type::getInt8Ty(TheContext);
@@ -355,29 +358,15 @@ std::unique_ptr<BaseNode> Parser::parseString(){
 
     while(this->_cToken.kind() != Token::Kind::DoubleQuote){
         uint8_t c = this->_cToken.lexeme()[0];
+
         this->eat();
 
-        if(c == '\\'){
-            c = this->_cToken.lexeme()[0];
-            switch(c){
-                case 'n':
-                    c = '\n';
-                    break;
-                case 't':
-                    c = '\t';
-                    break;  
-                case '\\':
-                    c = '\\';
-                    break;  
-                case '0':
-                    c = '\0';
-                    break;    
-            }
-
-            this->eat();
-        }
-
         auto E = std::make_unique<NumberExprNode>(std::to_string(int(c)));
+
+        if(!E){
+            std::cout << "Wrong string, body" << std::endl;
+            return nullptr;
+        }
 
         body.push_back(std::move(E));
     }
