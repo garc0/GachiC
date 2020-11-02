@@ -1,9 +1,6 @@
 #include "Parser.h"
 
 std::unique_ptr<ASTNode> Parser::parseNumber() {
-
-    std::cout << std::string(this->_cToken.lexeme()) << std::endl;
-
     auto Result = make_node<NumberExprNode>(std::string(this->_cToken.lexeme()));
     this->eat();
     return std::move(Result);
@@ -244,7 +241,6 @@ std::unique_ptr<ASTNode> Parser::parseType(){
     while(this->_cToken.is_kind(Token::Kind::Asterisk)){
         this->eat();
         t_v.push_back({TypeNode::type_id::pointer, "*"});
-        std::cout << "Asterisk\n";
     }
 
     std::string s = this->_cToken.lexeme();
@@ -265,7 +261,6 @@ std::unique_ptr<ASTNode> Parser::parseType(){
          t_v.push_back({TypeNode::type_id::u32, s.c_str()});
     if(s == "u64") 
          t_v.push_back({TypeNode::type_id::u64, s.c_str()});
-
     if(s == "i8")  
          t_v.push_back({TypeNode::type_id::i8, s.c_str()});
     if(s == "i16") 
@@ -435,7 +430,6 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
         case Token::Kind::LeftParen:    return parseParen();
         case Token::Kind::Number:       return parseNumber();
         case Token::Kind::While:        return parseWhile();
-        //case Token::Kind::Array:        return parseArray();
         case Token::Kind::For:          return parseFor();
         case Token::Kind::Var:          return parseVar();
         case Token::Kind::If:           return parseIf();
