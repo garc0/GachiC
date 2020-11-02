@@ -378,7 +378,7 @@ llvm::Value * VisitorExpr::operator()(NumberExprNode &node, T &){
 
         return nullptr;
     }
-    
+
     auto i = std::stoll(node._val);
     //if(is_in_range<uint8_t>(uint8_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(8, i));
     //if(is_in_range<uint16_t>(uint16_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(16, i));

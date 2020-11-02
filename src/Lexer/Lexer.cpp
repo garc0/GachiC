@@ -164,11 +164,12 @@ Token Lexer::identifier() noexcept {
 Token Lexer::number() noexcept {
     auto i = this->_i;
 
-    if(this->_s[_i] == 'x' ||
-        this->_s[_i] == 'b') 
+    if( this->_s[_i] == 'x' ||
+        this->_s[_i] == 'b' ||
+        this->_s[_i] == '.') 
         this->_i++;
     
-    while (isdigit(this->_s[_i])) this->_i++;
+    while (isdigit(this->_s[_i]) || this->_s[_i] == '.') this->_i++;
     return Token(Token::Kind::Number, &_s[i], &_s[_i]);
 }
 
