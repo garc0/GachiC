@@ -106,7 +106,7 @@ private:
 
     std::unique_ptr<ASTNode> parseExpression();
 
-    std::unique_ptr<ASTNode> parseBinOpRHS(int ExprPrec, 
+    std::unique_ptr<ASTNode> parseBinOpRHS(int32_t ExprPrec, 
                                 std::unique_ptr<ASTNode> LHS);
 
     std::unique_ptr<ASTNode> parsePrimary();
@@ -114,6 +114,6 @@ private:
 
     std::unique_ptr<ASTNode> parseType();
 
-    int GetTokPrecedence(Token tok);
+    int32_t GetTokPrecedence(Token tok);
 
 };

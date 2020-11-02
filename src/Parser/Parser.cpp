@@ -455,14 +455,14 @@ std::unique_ptr<ASTNode> Parser::parseUnary() {
     return nullptr;
 }
 
-int Parser::GetTokPrecedence(Token tok) {
+int32_t Parser::GetTokPrecedence(Token tok) {
     if (!(tok.kind() >= Token::Kind::LessThan && tok.kind() <= Token::Kind::Slash ||
      tok.kind() == Token::Kind::Colon ||
      tok.kind() == Token::Kind::Dot ||
      tok.kind() == Token::Kind::Equal))
         return -1;
 
-    int TokPrec = 0;
+    int32_t TokPrec = 0;
 
     while(_bOp[TokPrec] != tok.lexeme())
         TokPrec++;
@@ -472,31 +472,27 @@ int Parser::GetTokPrecedence(Token tok) {
     return TokPrec;
 }
 
- std::unique_ptr<ASTNode> Parser::parseBinOpRHS(int ExprPrec, std::unique_ptr<ASTNode> LHS) {
+ std::unique_ptr<ASTNode> Parser::parseBinOpRHS(int32_t ExprPrec, std::unique_ptr<ASTNode> LHS) {
   
     while (true) {
-        int TokPrec = GetTokPrecedence(this->_cToken);
+        int32_t TokPrec = GetTokPrecedence(this->_cToken);
 
         if (TokPrec < ExprPrec)
             return LHS;
 
         auto BinOp = this->_cToken;
         this->eat(); 
-    
 
         auto RHS = BinOp.is_kind(Token::Kind::Ass) ? parseType() : parseUnary();
-        if (!RHS)
-            return nullptr;
+        if (!RHS) return nullptr;
 
         int NextPrec = GetTokPrecedence(this->_cToken);
         if (TokPrec < NextPrec) {
             RHS = parseBinOpRHS(TokPrec, std::move(RHS));
-            if (!RHS)
-            return nullptr;
+            if (!RHS) return nullptr;
         }
 
-        LHS =
-            make_node<BinaryExprNode>(BinOp, std::move(LHS), std::move(RHS));
+        LHS = make_node<BinaryExprNode>(BinOp, std::move(LHS), std::move(RHS));
     }
 
     // ok
