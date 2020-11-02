@@ -62,7 +62,8 @@ private:
     Token identifier() noexcept;
     Token number() noexcept;
     Token slash_or_comment() noexcept;
-    Token parse_string();
+    Token parse_char() noexcept;
+    Token parse_string() noexcept;
 
     Token getAtom() noexcept;
     Token atom(Token::Kind) noexcept;

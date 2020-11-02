@@ -37,18 +37,20 @@
 #include <utility>
 #include <vector>
 
+#include <variant>
 
-#include "defs_ast.h"
+#include "AST/ast.h"
 
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
+#include "CodeGen/Visitor.h"
 
 #include "Utils/clipp.h"
 
 static llvm::Value * HandleDefinition(Parser * parser) {
 
   if (auto FnAST = parser->parseDef()) {
-    return FnAST->codegen();
+    return std::visit(VisitorFunction{}, *FnAST.get());
   } else parser->eat();
 
    return nullptr;
@@ -57,7 +59,7 @@ static llvm::Value * HandleDefinition(Parser * parser) {
 static llvm::Value * HandleMainDef(Parser * parser) {
 
   if (auto FnAST = parser->parseMain()) {
-    return FnAST->codegen();
+    return std::visit(VisitorFunction{}, *FnAST.get());
   } else parser->eat();
 
    return nullptr;
@@ -66,7 +68,8 @@ static llvm::Value * HandleMainDef(Parser * parser) {
 static llvm::Value * HandleStruct(Parser * parser) {
 
   if (auto FnAST = parser->parseStruct()) {
-    return FnAST->codegen();
+    std::variant<lvalue, rvalue> p(rvalue{});
+    return std::visit(VisitorExpr{}, *FnAST.get(), p);
   } else parser->eat();
 
   return nullptr;
@@ -74,8 +77,15 @@ static llvm::Value * HandleStruct(Parser * parser) {
 
 static llvm::Value * HandleExtern(Parser * parser) {
   if (auto ProtoAST = parser->parseExtern()) {
-    if (auto *FnIR = ProtoAST->codegen()) {
-      FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
+    if (auto *FnIR = std::visit(VisitorFunction{}, *ProtoAST.get())) {
+
+      auto proto_name = std::visit(overload{
+        [](PrototypeNode &n){
+            return n.getName();
+        },
+        [](auto &) -> std::string{ return ""; }
+      }, *ProtoAST.get());
+      FunctionProtos[proto_name] = std::move(ProtoAST);
 
       return FnIR;
     }
@@ -87,7 +97,7 @@ static llvm::Value * HandleExtern(Parser * parser) {
 
 static llvm::Value * HandleTopLevelExpression(Parser * parser) {
   if (auto FnAST = parser->parseTopLevelExpr()) {
-    return FnAST->codegen();
+    return std::visit(VisitorFunction{}, *FnAST.get());
   } else parser->eat();
 
   return nullptr;
@@ -274,9 +284,7 @@ int main(int argc, char* argv[]) {
 
     {
       FunctionProtos.clear();
-
       StructFields.clear();
-
       NamedValues.clear();
       NamedStructures.clear();
       

@@ -75,8 +75,10 @@ inline Token Lexer::getAtom() noexcept{
             return atom(Token::Kind::Colon);
         case ';':
             return atom(Token::Kind::Semicolon);
+        case '!':
+            return atom(Token::Kind::Not);
         case '\'':
-            return atom(Token::Kind::SingleQuote);
+            return parse_char();
         case '"':
             return parse_string();
         case '|':
@@ -116,6 +118,7 @@ std::optional<Token::Kind> stotok(std::string identifier){
         {"if", Token::Kind::If},
         {"else", Token::Kind::Else},
         {"for", Token::Kind::For},
+        {"while", Token::Kind::While},
         {"struct", Token::Kind::Struct},
     };
 
@@ -169,7 +172,44 @@ Token Lexer::slash_or_comment() noexcept {
     return Token(Token::Kind::Slash, &_s[i], 1);
 }
 
-Token Lexer::parse_string(){
+Token Lexer::parse_char() noexcept{
+    
+    auto atom = [&](Token::Kind kind) -> Token{
+        return Token(kind, &_s[_i++], 1);
+    };
+
+    this->_tokens.push_back(atom(Token::Kind::SingleQuote));
+
+
+    uint8_t c = this->_s[_i];
+
+    if(c == '\\'){
+        _i++;
+        c = this->_s[_i];
+        switch(c){
+            case 'n':
+                c = '\n';
+                break;
+            case 't':
+                c = '\t';
+                break;  
+            case '\\':
+                c = '\\';
+                break;  
+            case '0':
+                c = '\0';
+                break;    
+        }
+
+
+        this->_tokens.push_back(Token(Token::Kind::Identifier, (const char*)&c, 1));
+        this->_i++;
+    }
+
+    return atom(Token::Kind::SingleQuote);
+}
+
+Token Lexer::parse_string() noexcept{
     
     auto atom = [&](Token::Kind kind) -> Token{
         return Token(kind, &_s[_i++], 1);

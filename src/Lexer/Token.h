@@ -34,6 +34,7 @@ public:
         If,
         Else,
         For,
+        While,
 
         Binary,
         Unary,
@@ -57,6 +58,7 @@ public:
         Plus,
         Minus,
         Asterisk,
+        Not,
         Slash,
 
         Semicolon,
@@ -110,10 +112,10 @@ static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
             "Number", "Identifier",
             "Var", "In", "Cum",
             "Def", "Master", "Struct", "Array", "Extern", 
-            "If", "Else", "For",
+            "If", "Else", "For", "While",
             "Binary", "Unary", 
             "LeftParen", "RightParen", "LeftSquare", "RightSquare", "LeftCurly", "RightCurly",
-            "LessThan", "GreaterThan", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "Plus", "Minus", "Asterisk", "Slash", 
+            "LessThan", "GreaterThan", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "Plus", "Minus", "Asterisk", "Not","Slash", 
             "Semicolon",   "Hash", "Dot", "Comma", "Colon",      
             "SingleQuote", "DoubleQuote", "Comment", "Return", "Pipe", "End",
             "Unexpected",

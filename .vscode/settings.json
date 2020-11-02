@@ -58,6 +58,13 @@
         "typeinfo": "cpp",
         "iomanip": "cpp",
         "iostream": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "variant": "cpp",
+        "*.inc": "cpp"
+    },
+    "files.watcherExclude": {
+        "**/*": true,
+        "**/**/*": true
+
     }
 }

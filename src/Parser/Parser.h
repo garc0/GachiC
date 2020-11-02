@@ -33,7 +33,7 @@
 #include "../Lexer/Lexer.h"
 #include "../Lexer/Token.h"
 
-#include "../defs_ast.h"
+#include "../AST/ast.h"
 
 using namespace llvm;
 
@@ -61,29 +61,21 @@ public:
         return this->eat();
     }
 
-    std::unique_ptr<PrototypeNode>  parsePrototype();
-    std::unique_ptr<PrototypeNode>  parseExtern();
-    std::unique_ptr<FunctionNode>   parseDef();
+    std::unique_ptr<DefNode>    parsePrototype();
+    std::unique_ptr<DefNode>    parseExtern();
+    std::unique_ptr<DefNode>    parseDef();
 
-    std::unique_ptr<FunctionNode>   parseMain();
+    std::unique_ptr<DefNode>    parseMain();
     
-    std::unique_ptr<BaseNode>       parseStruct();
+    std::unique_ptr<ASTNode>    parseStruct();
 
-    std::unique_ptr<FunctionNode>   parseTopLevelExpr(){
-        auto E = parseExpression();
-        if(E){
-            auto Proto = std::make_unique<PrototypeNode>("__anon_expr",
-                                                 std::vector<std::pair<std::string, llvm::Type *>>());
-            return std::make_unique<FunctionNode>(std::move(Proto), std::move(E));
-        }
-        return nullptr;
-    }
+    std::unique_ptr<DefNode>    parseTopLevelExpr();
 
 private:
     Token _cToken;
     std::unique_ptr<Lexer> _lex;
 
-    std::unique_ptr<BlockNode> _cBlock = nullptr;
+    std::unique_ptr<ASTNode> _cBlock = make_node<BlockNode>();
 
     std::map<std::string_view, uint16_t> _bOp = {
         {".",   2 },
@@ -98,28 +90,29 @@ private:
         {"%",   70},
     };
 
-    std::unique_ptr<BaseNode> parseNumber();
-    std::unique_ptr<BaseNode> parseParen();
+    std::unique_ptr<ASTNode> parseNumber();
+    std::unique_ptr<ASTNode> parseParen();
 
-    std::unique_ptr<BaseNode> parseBlock();
+    std::unique_ptr<ASTNode> parseBlock();
 
-    std::unique_ptr<BaseNode> parseIdentifier();
-    std::unique_ptr<BaseNode> parseChar();
-    std::unique_ptr<BaseNode> parseString();
-    std::unique_ptr<BaseNode> parseArray();
-    std::unique_ptr<BaseNode> parseVar();
-    std::unique_ptr<BaseNode> parseFor();
-    std::unique_ptr<BaseNode> parseIf();
+    std::unique_ptr<ASTNode> parseIdentifier();
+    std::unique_ptr<ASTNode> parseChar();
+    std::unique_ptr<ASTNode> parseString();
+    std::unique_ptr<ASTNode> parseArray();
+    std::unique_ptr<ASTNode> parseVar();
+    std::unique_ptr<ASTNode> parseFor();
+    std::unique_ptr<ASTNode> parseWhile();
+    std::unique_ptr<ASTNode> parseIf();
 
-    std::unique_ptr<BaseNode> parseExpression();
+    std::unique_ptr<ASTNode> parseExpression();
 
-    std::unique_ptr<BaseNode> parseBinOpRHS(int ExprPrec, 
-                                std::unique_ptr<BaseNode> LHS);
+    std::unique_ptr<ASTNode> parseBinOpRHS(int ExprPrec, 
+                                std::unique_ptr<ASTNode> LHS);
 
-    std::unique_ptr<BaseNode> parsePrimary();
-    std::unique_ptr<BaseNode> parseUnary();
+    std::unique_ptr<ASTNode> parsePrimary();
+    std::unique_ptr<ASTNode> parseUnary();
 
-    llvm::Type * parseType();
+    std::unique_ptr<ASTNode> parseType();
 
     int GetTokPrecedence(Token tok);
 

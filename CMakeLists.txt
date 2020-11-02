@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(GachiC)
+project(gc)
 
 enable_testing()
 
@@ -16,31 +16,19 @@ include_directories(${CLANG_INCLUDE_DIRS})
 
 add_definitions(${LLVM_DEFINITIONS})
 
-# Now build our tools
-add_executable(GachiC 
-                main.cpp 
-                Lexer/Lexer.cpp
-                Parser/Parser.cpp
-                states.cpp 
+add_executable(gc 
+                src/main.cpp 
 
-                AST/NumberExprNode.cpp
-                AST/VariableExprNode.cpp
-                AST/VarExprNode.cpp
-                AST/UnaryExprNode.cpp
-                AST/BinaryExprNode.cpp
-                AST/IfNode.cpp
-                AST/CallExprNode.cpp
-                AST/ForExprNode.cpp
-                AST/PrototypeNode.cpp
-                AST/FunctionNode.cpp
-                AST/BlockNode.cpp
-                AST/StructNode.cpp
-                AST/ArrayNode.cpp
-                AST/TypeNode.cpp
+                src/Lexer/Lexer.cpp
+                src/Parser/Parser.cpp
+                src/CodeGen/Visitor.cpp
+                src/AST/ast.cpp
+                
+                src/states.cpp 
                 )
 
-set_property(TARGET GachiC PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set_property(TARGET gc PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-target_link_libraries(GachiC LINK_PUBLIC ${LLVM_AVAILABLE_LIBS})
+target_link_libraries(gc LINK_PUBLIC ${LLVM_AVAILABLE_LIBS})
 
 
