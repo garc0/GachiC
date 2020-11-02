@@ -124,9 +124,11 @@ static void MainLoop(Parser * parser, bool d) {
         break;
       case Token::Kind::Struct:
         { 
+          //dick move
           auto _e = reinterpret_cast<llvm::Type*>(HandleStruct(parser));
           if(d)
             _e->print(errs());
+            std::cerr << '\n';
         }
         break;
       default:

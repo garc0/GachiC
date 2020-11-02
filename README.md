@@ -50,9 +50,9 @@ For convenience, there is no "main" function, there is only "master", for which 
 extern swallow(x:*i8) cum nothing;
 master() cum i32
 {
-	var e = "Hello, Gym\n\0";
- 	swallow(&e);
- 	cumming(0);
+  var e = "Hello, Gym\n\0";
+  swallow(&e);
+  cumming(0);
 };
 ```
 To return a value from a function, you must use the unary operator (!) "cumming"
@@ -67,12 +67,12 @@ slave Bob(x: i32) cum i32
 extern swallow(x:*i8) cum nothing;
 master() cum i32
 {
- 	var str = "dupl\n\0";
-	var i = 0;
- 	while(i < 5) |i = i + 1|
-    	swallow(&str);
+  var str = "dupl\n\0";
+  var i = 0;
+  while(i < 5) |i = i + 1|
+    swallow(&str);
 
- 	cumming(0);
+  cumming(0);
 };
 ```
 
@@ -94,7 +94,7 @@ master() cum i32
     print(&false_str);
   };
 
- 	cumming(0);
+  cumming(0);
 };
 ```
 
@@ -103,21 +103,21 @@ master() cum i32
 extern printInt(x: i32) cum nothing;
 
 struct Poo{
-	a : i32;
+  a : i32;
 };
 
 struct Foo{
-    a : *i32;
-    b : Poo;
+  a : *i32;
+  b : Poo;
 };
 
 master() cum i32
 {
-	var i = 12;
-	var e = Foo{a: &i, b: Poo{a: i}};
+  var i = 10;
+  var e = Foo{a: &i, b: Poo{a: i}};
 
-	printInt(e.b.a);
-	printInt(*(e.a));
+  printInt(e.b.a);
+  printInt(*(e.a));
   cumming(0);
 };
 ```
@@ -125,8 +125,8 @@ master() cum i32
 #### Arrays
 
 ```swift
-	var i = [1, 2, 3, 4];
-	printInt(i[2]);
+  var i = [1, 2, 3, 4];
+  printInt(i[2]);
 ```
 
 #### Pointers
@@ -135,18 +135,18 @@ master() cum i32
 extern printInt(x: i32) cum nothing;
 
 struct Foo{
-    a: *i32;
+  a: *i32;
 };
 
 master() cum i32
 {
-	var tmp = 66;
-	var y = Foo{a : &tmp};
-	var n = &(y.a);
-	**(n ass **i32) = 99;
+  var tmp = 66;
+  var y = Foo{a : &tmp};
+  var n = &(y.a);
+  **(n ass **i32) = 99;
 
-	printInt(*(y.a));
-	printInt((1 + **n));
+  printInt(*(y.a));
+  printInt((1 + **n));
 
   cumming(0);
 };
