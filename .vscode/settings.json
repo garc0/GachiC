@@ -60,7 +60,8 @@
         "iostream": "cpp",
         "set": "cpp",
         "variant": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "*.def": "cpp"
     },
     "files.watcherExclude": {
         "**/*": true,

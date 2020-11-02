@@ -10,7 +10,7 @@ Gachimuchi-themed programming language (Work in progress)
 
 * cmake >= 3.15
 * gcc >= 9.3.0 or clang >= 11.0
-* LLVM, Clang, LLDF libs == 11.
+* LLVM, Clang, LLD libs == 11.
 
 ##### Windows
 
@@ -18,7 +18,7 @@ Gachimuchi-themed programming language (Work in progress)
  * Microsoft Visual Studio. Supported versions:
    - 2017 (version 15.8)
    - 2019 (version 16)
-* LLVM, Clang, LLDF libs == 11.
+* LLVM, Clang, LLD libs == 11.
 
 ### Instructions
 

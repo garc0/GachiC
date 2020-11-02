@@ -228,7 +228,26 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         llvm::Value * L = std::visit(*this, *node.LHS.get(), r);
         llvm::Type * R = reinterpret_cast<llvm::Type*>(std::visit(*this, *node.RHS.get(), r));
 
-        //llvm::Instruction::CastOps::
+        if(L->getType()->isIntegerTy()){
+            if(R->isPointerTy())
+                return Builder.CreateCast(llvm::Instruction::CastOps::IntToPtr, L, R);
+            if(R->isFloatTy() || R->isDoubleTy())
+                return Builder.CreateCast(llvm::Instruction::CastOps::SIToFP, L, R);
+            if(R->isIntegerTy())
+                return Builder.CreateCast(llvm::Instruction::CastOps::ZExt, L, R);
+        }
+
+        if(L->getType()->isFloatTy() || L->getType()->isDoubleTy()){
+            if(R->isFloatTy() || R->isDoubleTy())
+                return Builder.CreateCast(llvm::Instruction::CastOps::ZExt, L, R);
+            if(R->isIntegerTy())
+                return Builder.CreateCast(llvm::Instruction::CastOps::FPToSI, L, R);
+        }
+
+        if(L->getType()->isPointerTy()) {
+            if(R->isIntegerTy())
+                return Builder.CreateCast(llvm::Instruction::CastOps::PtrToInt, L, R);
+        }
         return Builder.CreateBitCast(L, R);
     }
     
