@@ -462,8 +462,12 @@ int Parser::GetTokPrecedence(Token tok) {
      tok.kind() == Token::Kind::Equal))
         return -1;
 
-    int TokPrec = this->_bOp[tok.lexeme()];
-    if (TokPrec <= 0)
+    int TokPrec = 0;
+
+    while(_bOp[TokPrec] != tok.lexeme())
+        TokPrec++;
+
+    if (TokPrec >= _bOp.size())
         return -1;
     return TokPrec;
 }

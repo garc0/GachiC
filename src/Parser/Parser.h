@@ -77,17 +77,17 @@ private:
 
     std::unique_ptr<ASTNode> _cBlock = make_node<BlockNode>();
 
-    std::map<std::string_view, uint16_t> _bOp = {
-        {".",   2 },
-        {"=",   2 },
-        {"ass", 10},
-        {"<",   20},
-        {">",   20},
-        {"+",   40},
-        {"-",   40},
-        {"*",   60},
-        {"/",   60},
-        {"%",   70},
+    std::vector<std::string> _bOp = {
+        {"."},
+        {"="},
+        {"ass"},
+        {"%"},
+        {"<"},
+        {">"},
+        {"+"},
+        {"-"},
+        {"*"},
+        {"/"},
     };
 
     std::unique_ptr<ASTNode> parseNumber();
