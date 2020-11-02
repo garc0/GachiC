@@ -225,7 +225,7 @@ public:
 
 class CharNode  {
 public:
-  CharNode(unsigned char Val) : _val(Val) {}
+  CharNode(unsigned char val_) : _val(val_) {}
 
   CharNode() = delete;
   CharNode &operator=(const CharNode &) = delete;
@@ -235,6 +235,20 @@ public:
   ~CharNode() = default;
 
   unsigned char _val;
+};
+
+class StringNode  {
+public:
+  StringNode(std::string val_) : _val(std::move(val_)) {}
+
+  StringNode() = delete;
+  StringNode &operator=(const StringNode &) = delete;
+  StringNode(const StringNode&) = delete;
+  StringNode(StringNode &&) = default;
+  StringNode &operator=(StringNode &&) = default;
+  ~StringNode() = default;
+
+  std::string _val;
 };
 
 class TypeNode  {

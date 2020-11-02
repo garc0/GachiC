@@ -78,16 +78,19 @@ private:
     std::unique_ptr<ASTNode> _cBlock = make_node<BlockNode>();
 
     std::vector<std::string> _bOp = {
-        {"."},
-        {"="},
-        {"ass"},
-        {"%"},
-        {"<"},
-        {">"},
-        {"+"},
-        {"-"},
-        {"*"},
-        {"/"},
+        "=",
+        "==",
+        "<",
+        ">",
+        "<=",
+        ">=",
+        "+",
+        "-",
+        "*",
+        "/",
+        "%",
+        "ass",
+        ".",
     };
 
     std::unique_ptr<ASTNode> parseNumber();

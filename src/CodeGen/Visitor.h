@@ -67,6 +67,7 @@ public:
     template<class T> llvm::Value * operator()(CallExprNode &, T &);
     template<class T> llvm::Value * operator()(NumberExprNode &, T &);
     template<class T> llvm::Value * operator()(CharNode &, T &);
+    template<class T> llvm::Value * operator()(StringNode &, T &);
     template<class T> llvm::Value * operator()(StructNode &, T &);
     template<class T> llvm::Value * operator()(StructExprNode &, T &);
     template<class T> llvm::Value * operator()(UnaryExprNode &, T &);

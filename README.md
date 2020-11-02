@@ -43,6 +43,21 @@ msbuild -p:Configuration=Release ALL_BUILD.vcxproj
 
 * Or you can use wsl(see [POSIX](#posix))
 
+## How to use
+
+First, compile source files into object files
+```sh
+$ gc -c file.gc
+```
+Then link them
+```sh
+$ clang++ file.o helper.o -o program
+```
+Run 
+```sh
+$ ./program
+```
+That's all
 ## Examples
 For convenience, there is no "main" function, there is only "master", for which you do not need to describe function declaration ("slave" for others)
 
@@ -50,8 +65,7 @@ For convenience, there is no "main" function, there is only "master", for which 
 extern swallow(x:*i8) cum nothing;
 master() cum i32
 {
-  var e = "Hello, Gym\n\0";
-  swallow(&e);
+  swallow("Hello, Gym\n\0");
   cumming(0);
 };
 ```
@@ -67,10 +81,9 @@ slave Bob(x: i32) cum i32
 extern swallow(x:*i8) cum nothing;
 master() cum i32
 {
-  var str = "dupl\n\0";
   var i = 0;
   while(i < 5) |i = i + 1|
-    swallow(&str);
+    swallow("dupl\n\0");
 
   cumming(0);
 };
@@ -83,15 +96,12 @@ extern print(x:*i8) cum nothing;
 
 master() cum i32
 {
-  var true_str =  "That's good\n\0";
-  var false_str = "Try again\n\0";
-
   var n = read();
 
   if(n % 2 < 1){
-    print(&true_str);
+    print("That's good\n\0");
   } else{
-    print(&false_str);
+    print("Try again\n\0");
   };
 
   cumming(0);

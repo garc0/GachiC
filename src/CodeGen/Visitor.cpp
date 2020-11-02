@@ -146,6 +146,11 @@ llvm::Value * VisitorExpr::operator()(ArrayInitNode &node, T &){
 }
 
 template<class T>
+llvm::Value * VisitorExpr::operator()(StringNode &node, T &){
+    return Builder.CreateGlobalStringPtr(node._val);
+}
+
+template<class T>
 llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
 
     if (node.Op.kind() == Token::Kind::Equal) {
@@ -249,9 +254,17 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         case Token::Kind::Modulo:
             return Builder.CreateURem(L, R, "modu");
         case Token::Kind::LessThan:
-            return Builder.CreateICmpSLT(L, R, "cmpu");
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SLT, L, R, "cmpu");
         case Token::Kind::GreaterThan:
-            return Builder.CreateICmpSLT(R, L, "cmpu");
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SGT, L, R, "cmpu");
+        case Token::Kind::LessEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SLE, L, R, "cmpu");
+        case Token::Kind::GreaterEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SGE, L, R, "cmpu");
+        case Token::Kind::DoubleEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_EQ, L, R, "equ");
+        case Token::Kind::NotEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_NE, L, R, "neu");
         default:
             break;
         }
@@ -268,9 +281,17 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         case Token::Kind::Modulo:
             return nullptr;
         case Token::Kind::LessThan:
-            return Builder.CreateFCmpOLT(L, R, "cmpf");
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::FCMP_OLT, L, R, "cmpf");
         case Token::Kind::GreaterThan:
-            return Builder.CreateFCmpOLT(R, L, "cmpf");
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::FCMP_OGT, L, R, "cmpf");
+        case Token::Kind::LessEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::FCMP_OLE, L, R, "cmpf");
+        case Token::Kind::GreaterEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::FCMP_OGE, L, R, "cmpf");
+        case Token::Kind::DoubleEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::FCMP_OEQ, L, R, "eqf");
+        case Token::Kind::NotEqual:
+            return Builder.CreateCmp(llvm::CmpInst::Predicate::FCMP_ONE, L,  R, "nef");
         default:
             break;
         }

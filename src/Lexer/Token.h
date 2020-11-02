@@ -48,7 +48,9 @@ public:
         RightCurly,
 
         LessThan,
+        LessEqual,
         GreaterThan,
+        GreaterEqual,
 
         Modulo,
         Equal,
@@ -59,6 +61,7 @@ public:
         Minus,
         Asterisk,
         Not,
+        NotEqual,
         Slash,
 
         Semicolon,
@@ -115,7 +118,7 @@ static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
             "If", "Else", "For", "While",
             "Binary", "Unary", 
             "LeftParen", "RightParen", "LeftSquare", "RightSquare", "LeftCurly", "RightCurly",
-            "LessThan", "GreaterThan", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "Plus", "Minus", "Asterisk", "Not","Slash", 
+            "LessThan", "LessEqual", "GreaterThan", "GreaterEqual", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "Plus", "Minus", "Asterisk", "Not", "NotEqual", "Slash", 
             "Semicolon",   "Hash", "Dot", "Comma", "Colon",      
             "SingleQuote", "DoubleQuote", "Comment", "Return", "Pipe", "End",
             "Unexpected",

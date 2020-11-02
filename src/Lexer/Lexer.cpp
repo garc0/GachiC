@@ -9,6 +9,7 @@ inline bool is_space(char c){
         c == ' '  ||
         c == '\t' ||
         c == '\r' ||
+        c == '\0' ||
         c == '\n'
     ); 
 }
@@ -48,12 +49,24 @@ inline Token Lexer::getAtom() noexcept{
         case '}':
             return atom(Token::Kind::RightCurly);
         case '<':
+            if(this->_s[_i + 1] == '='){
+                this->_i += 2;
+                return Token(Token::Kind::LessEqual, &this->_s[_i - 2], 2);
+            }
             return atom(Token::Kind::LessThan);
         case '>':
+            if(this->_s[_i + 1] == '='){
+                this->_i += 2;
+                return Token(Token::Kind::GreaterEqual, &this->_s[_i - 2], 2);
+            }
             return atom(Token::Kind::GreaterThan);
         case '%':
             return atom(Token::Kind::Modulo);
         case '=':
+            if(this->_s[_i + 1] == '='){
+                this->_i += 2;
+                return Token(Token::Kind::DoubleEqual, &this->_s[_i - 2], 2);
+            }
             return atom(Token::Kind::Equal);
         case '&':
             return atom(Token::Kind::Ampersand);
@@ -76,6 +89,10 @@ inline Token Lexer::getAtom() noexcept{
         case ';':
             return atom(Token::Kind::Semicolon);
         case '!':
+            if(this->_s[_i + 1] == '='){
+                this->_i += 2;
+                return Token(Token::Kind::NotEqual, &this->_s[_i - 2], 2);
+            }
             return atom(Token::Kind::Not);
         case '\'':
             return parse_char();

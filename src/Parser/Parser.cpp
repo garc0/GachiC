@@ -394,26 +394,17 @@ std::unique_ptr<ASTNode> Parser::parseString(){
     
     this->expectNext(Token::Kind::DoubleQuote);
 
-    std::vector<std::unique_ptr<ASTNode>> body;
+    std::string body;
 
     while(this->_cToken.kind() != Token::Kind::DoubleQuote){
         uint8_t c = this->_cToken.lexeme()[0];
-
         this->eat();
-
-        auto E = make_node<CharNode>(c);
-
-        if(!E){
-            std::cout << "Wrong string, body" << std::endl;
-            return nullptr;
-        }
-
-        body.push_back(std::move(E));
+        body.push_back(c);
     }
 
     this->expectNext(Token::Kind::DoubleQuote);
 
-    return make_node<ArrayInitNode>(std::move(body));
+    return make_node<StringNode>(std::move(body));
 }
 
 std::unique_ptr<ASTNode> Parser::parsePrimary() {

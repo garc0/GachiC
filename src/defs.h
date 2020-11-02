@@ -21,6 +21,7 @@ class VariableExprNode;
 class WhileExpr;
 class TypeNode;
 class CharNode;
+class StringNode;
 
 class PrototypeNode;
 class FunctionNode;
@@ -41,6 +42,7 @@ using ASTNode = std::variant<
             CallExprNode,
             NumberExprNode,
             CharNode,
+            StringNode,
             StructNode,
             StructExprNode,
             UnaryExprNode,
