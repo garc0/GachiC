@@ -327,6 +327,7 @@ inline bool is_in_range(T v){
 }
 template<class T>
 llvm::Value * VisitorExpr::operator()(NumberExprNode &node, T &){
+
     bool is_float = node._val.find('.') != std::string::npos;
 
     if(is_float){
@@ -344,6 +345,12 @@ llvm::Value * VisitorExpr::operator()(NumberExprNode &node, T &){
     if(is_in_range<uint32_t>(uint32_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(32, i));
     if(is_in_range<uint64_t>(uint64_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(64, i));
     return nullptr;
+}
+
+
+template<class T>
+llvm::Value * VisitorExpr::operator()(CharNode &node, T &){
+    return llvm::ConstantInt::get(TheContext, llvm::APInt(8, node._val));
 }
 
 template<class T>
@@ -683,7 +690,7 @@ template<class T> llvm::Value * VisitorExpr::operator()(TypeNode &node, T &){
 
         if(ty == TypeNode::type_id::nothing) return llvm::Type::getVoidTy(TheContext);
 
-        if(ty == TypeNode::type_id::u1) return llvm::Type::getInt1Ty(TheContext);
+        if(ty == TypeNode::type_id::u1) return llvm::Type::getInt8Ty(TheContext);
 
         if(ty == TypeNode::type_id::u8)  return llvm::Type::getInt8Ty(TheContext);
         if(ty == TypeNode::type_id::u16) return llvm::Type::getInt16Ty(TheContext);

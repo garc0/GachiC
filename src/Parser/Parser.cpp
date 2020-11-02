@@ -387,7 +387,7 @@ std::unique_ptr<ASTNode> Parser::parseChar(){
     if(!this->expectNext(Token::Kind::SingleQuote).has_value())
     return nullptr;
 
-    return make_node<NumberExprNode>(std::to_string(int(c)));
+    return make_node<CharNode>(c);
 }
 
 std::unique_ptr<ASTNode> Parser::parseString(){
@@ -401,7 +401,7 @@ std::unique_ptr<ASTNode> Parser::parseString(){
 
         this->eat();
 
-        auto E = make_node<NumberExprNode>(std::to_string(int(c)));
+        auto E = make_node<CharNode>(c);
 
         if(!E){
             std::cout << "Wrong string, body" << std::endl;

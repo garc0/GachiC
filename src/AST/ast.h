@@ -223,7 +223,19 @@ public:
   std::string _val;
 };
 
+class CharNode  {
+public:
+  CharNode(unsigned char Val) : _val(Val) {}
 
+  CharNode() = delete;
+  CharNode &operator=(const CharNode &) = delete;
+  CharNode(const CharNode&) = delete;
+  CharNode(CharNode &&) = default;
+  CharNode &operator=(CharNode &&) = default;
+  ~CharNode() = default;
+
+  unsigned char _val;
+};
 
 class TypeNode  {
 public:
