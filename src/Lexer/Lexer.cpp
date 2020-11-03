@@ -162,15 +162,21 @@ Token Lexer::identifier() noexcept {
 }
 
 Token Lexer::number() noexcept {
-    auto i = this->_i;
+    std::string n{};
 
     if( this->_s[_i] == 'x' ||
         this->_s[_i] == 'b' ||
         this->_s[_i] == '.') 
         this->_i++;
     
-    while (isdigit(this->_s[_i]) || this->_s[_i] == '.') this->_i++;
-    return Token(Token::Kind::Number, &_s[i], &_s[_i]);
+    while ( isdigit(this->_s[_i])   ||
+            this->_s[_i] == '.'     || 
+            this->_s[_i] == '_'){ 
+        if(this->_s[_i] != '_')
+            n.push_back(this->_s[_i]);
+        this->_i++;
+    }
+    return Token(Token::Kind::Number, std::move(n));
 }
 
 Token Lexer::slash_or_comment() noexcept {

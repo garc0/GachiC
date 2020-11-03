@@ -39,6 +39,7 @@ using namespace llvm;
 struct lvalue{};
 struct rvalue{};
 
+
 class VisitorFunction{
 public:
     VisitorFunction(){}
@@ -50,8 +51,6 @@ public:
 
 private:
 };
-
-
 class VisitorExpr{
 public:
     VisitorExpr(){}
@@ -76,6 +75,16 @@ public:
     template<class T> llvm::Value * operator()(WhileExpr &, T &);
     template<class T> llvm::Value * operator()(TypeNode &, T &);
 
+    template<class RL = rvalue, class T>
+    auto expr_visit(T &node){
+        std::variant<lvalue, rvalue> rl;
+        if constexpr(std::is_same<RL, rvalue>())
+            rl = rvalue();
+        else
+            rl = lvalue();
+            
+        return std::visit(*this, node, rl);
+    }
 private:
 };
 

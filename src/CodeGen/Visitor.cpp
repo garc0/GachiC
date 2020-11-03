@@ -154,21 +154,18 @@ template<class T>
 llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
 
     if (node.Op.kind() == Token::Kind::Equal) {
-
-        std::variant<lvalue, rvalue> l{lvalue{}};
-        llvm::Value * Variable = std::visit(*this, *node.LHS.get(), l);    
+        llvm::Value * Variable = this->expr_visit<lvalue>(*node.LHS.get());    
 
         if(!Variable){
-            std::cout << "lvalue is not valid" << std::endl;
+            std::cerr << "lvalue is not valid" << std::endl;
             return nullptr;
         }
 
         if(!Variable->getType()->isPointerTy()){
-            std::cout << "lvalue is not a pointer" << std::endl;
+            std::cerr << "lvalue is not a pointer" << std::endl;
             return nullptr;
         }
-        std::variant<lvalue, rvalue> r{rvalue{}};
-        llvm::Value * Val = std::visit(*this, *node.RHS.get(), r);
+        llvm::Value * Val = this->expr_visit(*node.RHS.get());
         if (!Val)
             return nullptr;
 
@@ -179,8 +176,7 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
 
     if(node.Op.kind() == Token::Kind::Dot){
         
-        std::variant<lvalue, rvalue> l{lvalue{}};
-        llvm::Value * variable = std::visit(*this, *node.LHS.get(), l);
+        llvm::Value * variable = this->expr_visit<lvalue>(*node.LHS.get());
 
         if (!variable)
             return LogErrorV("Unknown variable name\n");
@@ -222,11 +218,9 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         else return Builder.CreateLoad(elem_ptr);
     }
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-
     if(node.Op.kind() == Token::Kind::Ass){
-        llvm::Value * L = std::visit(*this, *node.LHS.get(), r);
-        llvm::Type * R = reinterpret_cast<llvm::Type*>(std::visit(*this, *node.RHS.get(), r));
+        llvm::Value * L = this->expr_visit(*node.LHS.get());
+        llvm::Type * R = reinterpret_cast<llvm::Type*>(this->expr_visit(*node.RHS.get()));
 
         if(L->getType()->isIntegerTy()){
             if(R->isPointerTy())
@@ -251,8 +245,8 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         return Builder.CreateBitCast(L, R);
     }
     
-    llvm::Value * L = std::visit(*this, *node.LHS.get(), r);
-    llvm::Value * R = std::visit(*this, *node.RHS.get(), r);
+    llvm::Value * L = this->expr_visit(*node.LHS.get());
+    llvm::Value * R = this->expr_visit(*node.RHS.get());
     if (!L || !R)  return nullptr;
 
 
@@ -325,10 +319,8 @@ llvm::Value * VisitorExpr::operator()(BlockNode &node, T &){
     
     llvm::Value * ValRet = nullptr;
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-
     for(int i = 0; i < node.l.size(); i++){
-        if(!(ValRet = std::visit(*this, *node.l[i].get(), r)))
+        if(!(ValRet = this->expr_visit(*node.l[i].get())))
             return nullptr;
     }
 
@@ -349,11 +341,9 @@ llvm::Value * VisitorExpr::operator()(CallExprNode &node, T &){
     if (CalleeF->arg_size() != node.Args.size())
         return LogErrorV("Incorrect # arguments passed");
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-
     std::vector<llvm::Value *> ArgsV;
     for (unsigned i = 0, e = node.Args.size(); i != e; ++i) {
-        ArgsV.push_back(std::visit(*this, *node.Args[i].get(), r));
+        ArgsV.push_back(this->expr_visit(*node.Args[i].get()));
         if (!ArgsV.back())
         return nullptr;
     }
@@ -376,14 +366,13 @@ llvm::Value * VisitorExpr::operator()(NumberExprNode &node, T &){
         if(is_in_range(float(d))) return llvm::ConstantFP::get(TheContext, llvm::APFloat(float(d)));
         if(is_in_range(double(d))) return llvm::ConstantFP::get(TheContext, llvm::APFloat(double(d)));
 
-        return nullptr;
+    }else{
+        auto i = std::stoll(node._val);
+        //if(is_in_range<uint8_t>(uint8_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(8, i));
+        //if(is_in_range<uint16_t>(uint16_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(16, i));
+        if(is_in_range<uint32_t>(uint32_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(32, i));
+        if(is_in_range<uint64_t>(uint64_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(64, i));
     }
-
-    auto i = std::stoll(node._val);
-    //if(is_in_range<uint8_t>(uint8_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(8, i));
-    //if(is_in_range<uint16_t>(uint16_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(16, i));
-    if(is_in_range<uint32_t>(uint32_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(32, i));
-    if(is_in_range<uint64_t>(uint64_t(i))) return llvm::ConstantInt::get(TheContext, llvm::APInt(64, i));
     return nullptr;
 }
 
@@ -455,19 +444,19 @@ llvm::Value * VisitorExpr::operator()(UnaryExprNode &node, T &){
 
 
     if(node.Opcode.is_kind(Token::Kind::Return)){
-        std::variant<lvalue, rvalue> r{rvalue{}};
-        llvm::Value * OperandV = std::visit(*this, *node.Operand.get(), r);
+        llvm::Value * OperandV = this->expr_visit(*node.Operand.get());
+
+        if(!OperandV) return nullptr;
+
         return Builder.CreateRet(OperandV);
     }
 
     if(node.Opcode.is_kind(Token::Kind::Ampersand)){
-        std::variant<lvalue, rvalue> l{lvalue{}};
-        return std::visit(*this, *node.Operand.get(), l);
+        return this->expr_visit<lvalue>(*node.Operand.get());
     }
 
     if(node.Opcode.is_kind(Token::Kind::Asterisk)){
-        std::variant<lvalue, rvalue> r{rvalue{}};
-        llvm::Value * OperandV = std::visit(*this, *node.Operand.get(), r);
+        llvm::Value * OperandV = this->expr_visit(*node.Operand.get());
 
         if(!OperandV) return nullptr;
 
@@ -477,8 +466,7 @@ llvm::Value * VisitorExpr::operator()(UnaryExprNode &node, T &){
     }
 
     if(node.Opcode.is_kind(Token::Kind::Minus)){
-        std::variant<lvalue, rvalue> r{rvalue{}};
-        llvm::Value * OperandV = std::visit(*this, *node.Operand.get(), r);
+        llvm::Value * OperandV = this->expr_visit(*node.Operand.get());
 
         if(!OperandV) return nullptr;
 
@@ -488,8 +476,7 @@ llvm::Value * VisitorExpr::operator()(UnaryExprNode &node, T &){
     }
 
     if(node.Opcode.is_kind(Token::Kind::Not)){
-        std::variant<lvalue, rvalue> r{rvalue{}};
-        llvm::Value * OperandV = std::visit(*this, *node.Operand.get(), r);
+        llvm::Value * OperandV = this->expr_visit(*node.Operand.get());
 
         if(!OperandV) return nullptr;
 
@@ -516,8 +503,7 @@ llvm::Value * VisitorExpr::operator()(VarExprNode &node, T &){
     } else 
         InitVal = llvm::ConstantInt::get(TheContext, llvm::APInt(64, (uint64_t)0));
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-    InitVal = std::visit(*this, *Init, r);
+    InitVal = this->expr_visit(*Init);
 
     llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, "", InitVal->getType());
 
@@ -576,8 +562,7 @@ llvm::Value * VisitorExpr::operator()(WhileExpr &node, T &){
         llvm::BasicBlock::Create(TheContext, "after_loop", TheFunction);
 
     {
-        std::variant<lvalue, rvalue> r{rvalue{}};
-        auto * cond_val = std::visit(*this, *node._cond.get(), r);
+        auto * cond_val = this->expr_visit(*node._cond.get());
         if(!cond_val){
             return nullptr;
         }
@@ -586,20 +571,16 @@ llvm::Value * VisitorExpr::operator()(WhileExpr &node, T &){
 
     Builder.SetInsertPoint(loop_bb);
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-
-    if(!std::visit(*this, *node._body.get(), r))
+    if(!this->expr_visit(*node._body.get()))
         return nullptr;
     
     if(node._step.has_value() && node._step.value())
-        if(!std::visit(*this, *node._step.value().get(), r))
+        if(!this->expr_visit(*node._step.value().get()))
             return nullptr;
 
-    auto * cond_val = std::visit(*this, *node._cond.get(), r);
-    if(!cond_val){
+    auto * cond_val = this->expr_visit(*node._cond.get());
+    if(!cond_val)
         return nullptr;
-    }
-
 
     Builder.CreateCondBr(cond_val, loop_bb, after_bb);
 
@@ -612,9 +593,7 @@ template<class T>
 llvm::Value * VisitorExpr::operator()(ForExpr &node, T &){
     llvm::Function *TheFunction = Builder.GetInsertBlock()->getParent();
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-
-    llvm::Value * StartVal = std::visit(*this, *node.Start.get(), r);
+    llvm::Value * StartVal = this->expr_visit(*node.Start.get());
     if (!StartVal)
         return nullptr;
 
@@ -631,37 +610,37 @@ llvm::Value * VisitorExpr::operator()(ForExpr &node, T &){
     std::get<0>(NamedValues[node.VarName]) = Alloca;
 
 
-    if (std::visit(*this, *node.Body.get(), r))
+    if (this->expr_visit(*node.Body.get()))
         return nullptr;
 
     llvm::Value * StepVal = nullptr;
     if (node.Step) {
-        StepVal = std::visit(*this, *node.Step.get(), r);
+        StepVal = this->expr_visit(*node.Step.get());
         if (!StepVal)
          return nullptr;
     } else 
         StepVal = llvm::ConstantInt::get(TheContext, llvm::APInt(64, 1));
 
-    llvm::Value * EndCond = std::visit(*this, *node.End.get(), r);
+    llvm::Value * EndCond = this->expr_visit(*node.End.get());
     if (!EndCond)
         return nullptr;
 
 
-    llvm::Value *CurVar = Builder.CreateLoad(Alloca, node.VarName.c_str());
-    llvm::Value *NextVar = Builder.CreateAdd(CurVar, StepVal, "next_var");
+    llvm::Value * CurVar = Builder.CreateLoad(Alloca, node.VarName.c_str());
+    llvm::Value * NextVar = Builder.CreateAdd(CurVar, StepVal, "next_var");
     Builder.CreateStore(NextVar, Alloca);
 
-    llvm::BasicBlock *AfterBB =
-    llvm::BasicBlock::Create(TheContext, "after_loop", TheFunction);
+    llvm::BasicBlock * AfterBB =
+        llvm::BasicBlock::Create(TheContext, "after_loop", TheFunction);
 
     Builder.CreateCondBr(EndCond, LoopBB, AfterBB);
 
     Builder.SetInsertPoint(AfterBB);
 
     if (OldVal)
-    std::get<0>(NamedValues[node.VarName]) = OldVal;
+        std::get<0>(NamedValues[node.VarName]) = OldVal;
     else
-    NamedValues.erase(node.VarName);
+        NamedValues.erase(node.VarName);
 
     return llvm::Constant::getNullValue(llvm::Type::getInt64Ty(TheContext));
 }
@@ -669,8 +648,7 @@ llvm::Value * VisitorExpr::operator()(ForExpr &node, T &){
 template<class T>
 llvm::Value * VisitorExpr::operator()(IfExpr &node, T &){
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-    llvm::Value *CondV = std::visit(*this, *node.Cond.get(), r);
+    llvm::Value *CondV = this->expr_visit(*node.Cond.get());
     if (!CondV)
     return nullptr;
 
@@ -678,9 +656,7 @@ llvm::Value * VisitorExpr::operator()(IfExpr &node, T &){
     llvm::Function *TheFunction = Builder.GetInsertBlock()->getParent();
 
     llvm::BasicBlock *ThenBB = llvm::BasicBlock::Create(TheContext, "then", TheFunction);
-
     llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(TheContext, "else");
-
     llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(TheContext, "if_cont");
 
     if(node.Else)
@@ -689,7 +665,7 @@ llvm::Value * VisitorExpr::operator()(IfExpr &node, T &){
 
     Builder.SetInsertPoint(ThenBB);
 
-    llvm::Value *ThenV = std::visit(*this, *node.Then.get(), r);
+    llvm::Value *ThenV = this->expr_visit(*node.Then.get());
 
     if (!ThenV)
         return nullptr;
@@ -700,7 +676,7 @@ llvm::Value * VisitorExpr::operator()(IfExpr &node, T &){
         TheFunction->getBasicBlockList().push_back(ElseBB);
         Builder.SetInsertPoint(ElseBB);
     
-        llvm::Value *ElseV = std::visit(*this, *node.Else.get(), r);
+        llvm::Value *ElseV = this->expr_visit(*node.Else.get());
         if (!ElseV) return nullptr;
     }
 
