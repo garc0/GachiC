@@ -14,8 +14,8 @@ Gachimuchi-themed programming language (Work in progress)
     * [Structures](#structure-types)
     * [Arrays](#arrays)
     * [Memory management](#memory-management)
+* [License](License)
 * [Mates](#mates)
-* [License]()
 
 ## Build
 
@@ -170,8 +170,6 @@ Example:
 
 Example:
 ```swift
-extern printInt(x: i32) cum nothing;
-
 struct Poo{
   a : i32;
 };
@@ -202,7 +200,7 @@ Example:
 The type of array elements determines the type of its first element
 
 ```swift
-  var i = [123.123 ass i32, 2, 3, 4];
+  var i = [123 ass i8, 2, 3, 4];
   printInt(i[0]);
 ```
 
@@ -233,5 +231,6 @@ master() cum i32
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Mates
-* [Good Memes](https://vk.com/good_memes)
-* [Everlusting Suction](https://vk.com/everlusting_suction)
+* Good Memes [[VK](https://vk.com/good_memes)]
+* Everlusting Suction [[VK](https://vk.com/everlusting_suction)][[Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=1699955374)]
+

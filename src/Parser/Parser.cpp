@@ -17,7 +17,7 @@ std::unique_ptr<ASTNode> Parser::parseParen() {
   if(!this->expectNext(Token::Kind::RightParen).has_value())
     return nullptr;
 
-  return V;
+  return std::move(V);
 }
 
 std::unique_ptr<ASTNode> Parser::parseBlock() {
@@ -125,13 +125,18 @@ std::unique_ptr<ASTNode> Parser::parseIdentifier() {
     if(this->_cToken.kind() == Token::Kind::LeftSquare){
         //Array index
         
-        this->expectNext(Token::Kind::LeftSquare);
+        std::vector<std::unique_ptr<ASTNode>> indexes;
 
-        std::unique_ptr<ASTNode> E = this->parseExpression();
-        
-        this->expectNext(Token::Kind::RightSquare);
+        while(this->_cToken.is_kind(Token::Kind::LeftSquare)){
 
-        return make_node<ArrayExprNode>(IdName, std::move(E));
+            this->eat();
+
+            indexes.push_back(std::move(this->parseExpression()));
+            
+            this->expectNext(Token::Kind::RightSquare);
+        }   
+
+        return make_node<ArrayExprNode>(IdName, std::move(indexes));
     }
     
     // just a variable; 
@@ -192,12 +197,13 @@ std::unique_ptr<ASTNode> Parser::parseFor() {
 
     // The step value is optional.
     std::unique_ptr<ASTNode> Step;
-    if (this->_cToken.kind() != Token::Kind::Comma) {
+    if (this->_cToken.is_kind(Token::Kind::Comma)) {
         this->eat();
         Step = parseExpression();
-        if (!Step)
-            return nullptr;
     }
+
+    if (!Step)
+        return nullptr;
 
     auto Body = parseExpression();
     if (!Body)
@@ -238,43 +244,44 @@ std::unique_ptr<ASTNode> Parser::parseType(){
 
     std::vector<TypeNode::type_pair> t_v;
 
-    while(this->_cToken.is_kind(Token::Kind::Asterisk)){
-        this->eat();
-        t_v.push_back({TypeNode::type_id::pointer, "*"});
+    while(this->_cToken.is_one_of(Token::Kind::Asterisk, Token::Kind::LeftSquare) ){
+        if(this->_cToken.is_kind(Token::Kind::Asterisk)){
+            this->eat();
+            t_v.push_back({TypeNode::type_id::pointer, "*"});
+        }else{
+            this->expectNext(Token::Kind::LeftSquare);
+            if(!this->_cToken.is_kind(Token::Kind::Number)){
+                std::cerr << "Expected a number" << std::endl;
+                return nullptr;
+            }
+            t_v.push_back({TypeNode::type_id::array, this->_cToken.lexeme().c_str()});
+            this->eat();
+            this->expectNext(Token::Kind::RightSquare);
+        }
     }
 
-    std::string s = this->_cToken.lexeme();
+    auto s = this->_cToken.lexeme();
 
     this->eat();
 
+    if(s == "nothing")  t_v.push_back({TypeNode::type_id::nothing, s.c_str()});
 
-    if(s == "nothing") 
-        t_v.push_back({TypeNode::type_id::nothing, s.c_str()});
+    if(s == "bool")     t_v.push_back({TypeNode::type_id::u1, s.c_str()});
 
-    if(s == "bool") 
-         t_v.push_back({TypeNode::type_id::u1, s.c_str()});
-    if(s == "u8")  
-         t_v.push_back({TypeNode::type_id::u8, s.c_str()});
-    if(s == "u16") 
-         t_v.push_back({TypeNode::type_id::u16, s.c_str()});
-    if(s == "u32") 
-         t_v.push_back({TypeNode::type_id::u32, s.c_str()});
-    if(s == "u64") 
-         t_v.push_back({TypeNode::type_id::u64, s.c_str()});
-    if(s == "i8")  
-         t_v.push_back({TypeNode::type_id::i8, s.c_str()});
-    if(s == "i16") 
-         t_v.push_back({TypeNode::type_id::i16, s.c_str()});
-    if(s == "i32") 
-         t_v.push_back({TypeNode::type_id::i32, s.c_str()});
-    if(s == "i64") 
-         t_v.push_back({TypeNode::type_id::i64, s.c_str()});
+    if(s == "u8")       t_v.push_back({TypeNode::type_id::u8, s.c_str()});
+    if(s == "u16")      t_v.push_back({TypeNode::type_id::u16, s.c_str()});
+    if(s == "u32")      t_v.push_back({TypeNode::type_id::u32, s.c_str()});
+    if(s == "u64")      t_v.push_back({TypeNode::type_id::u64, s.c_str()});
 
-    if(s == "f32") 
-         t_v.push_back({TypeNode::type_id::f32, s.c_str()});
-    if(s == "f64") 
-         t_v.push_back({TypeNode::type_id::f64, s.c_str()});
-    
+    if(s == "i8")       t_v.push_back({TypeNode::type_id::i8, s.c_str()});
+    if(s == "i16")      t_v.push_back({TypeNode::type_id::i16, s.c_str()});
+    if(s == "i32")      t_v.push_back({TypeNode::type_id::i32, s.c_str()});
+    if(s == "i64")      t_v.push_back({TypeNode::type_id::i64, s.c_str()});
+
+    if(s == "f32")      t_v.push_back({TypeNode::type_id::f32, s.c_str()});
+    if(s == "f64")      t_v.push_back({TypeNode::type_id::f64, s.c_str()});
+
+    // oops
     t_v.push_back({TypeNode::type_id::struct_type, s.c_str()});
 
     return make_node<TypeNode>(std::move(t_v));
@@ -317,6 +324,47 @@ std::unique_ptr<ASTNode> Parser::parseVar() {
     return make_node<VarExprNode>(_cBlock.get(), std::move(VarNames));
 }
 
+std::unique_ptr<ASTNode> Parser::parseStick() {
+    this->expectNext(Token::Kind::Stick);
+
+    std::pair<std::string, std::unique_ptr<ASTNode>> _to_stick;
+
+    if(this->_cToken.is_kind(Token::Kind::Out))
+    {
+        this->eat();
+        if(!this->_cToken.is_kind(Token::Kind::Identifier))
+            return nullptr;
+
+        _to_stick.first = this->_cToken.lexeme();
+        _to_stick.second = nullptr;
+
+        this->eat();
+
+        return make_node<StickNode>(_cBlock.get(), std::move(_to_stick), false);
+    }
+
+    this->expectNext(Token::Kind::Your);
+
+    _to_stick.second = parseType();
+
+    if(!_to_stick.second){
+        std::cout << "Failed to parse type" << std::endl;
+        return nullptr;
+    }
+    
+    this->expectNext(Token::Kind::In);
+    this->expectNext(Token::Kind::My);
+
+    if(!this->_cToken.is_kind(Token::Kind::Identifier))
+        return nullptr;
+
+    _to_stick.first = this->_cToken.lexeme();
+
+    this->eat();
+
+   return make_node<StickNode>(_cBlock.get(), std::move(_to_stick), true);
+}
+
 std::unique_ptr<ASTNode> Parser::parseStruct() {
     this->eat();
 
@@ -356,7 +404,6 @@ std::unique_ptr<ASTNode> Parser::parseStruct() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseArray(){
-   // this->expectNext(Token::Kind::Array);
 
     std::vector<std::unique_ptr<ASTNode>> body;
 
@@ -398,6 +445,7 @@ std::unique_ptr<ASTNode> Parser::parseString(){
 
     while(this->_cToken.kind() != Token::Kind::DoubleQuote){
         uint8_t c = this->_cToken.lexeme()[0];
+
         this->eat();
         body.push_back(c);
     }
@@ -419,6 +467,7 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
         case Token::Kind::LeftSquare:   return parseArray();
         case Token::Kind::LeftCurly:    return parseBlock();
         case Token::Kind::LeftParen:    return parseParen();
+        case Token::Kind::Stick:        return parseStick();
         case Token::Kind::Number:       return parseNumber();
         case Token::Kind::While:        return parseWhile();
         case Token::Kind::For:          return parseFor();
@@ -506,21 +555,21 @@ std::unique_ptr<DefNode> Parser::parsePrototype() {
 
     std::string function_name;
 
-    if(this->_cToken.kind() == Token::Kind::Identifier){
-            function_name = std::string(this->_cToken.lexeme());
-            this->eat();
-    }else if(this->_cToken.kind() == Token::Kind::Master){
+    if(this->_cToken.kind() == Token::Kind::Identifier)
+        function_name = this->_cToken.lexeme();
+    else if(this->_cToken.kind() == Token::Kind::Master)
         function_name = "main";
-        this->eat();
-    }else return nullptr;
+    
+    else return nullptr;
 
+    this->eat();
 
     if(!this->expectNext(Token::Kind::LeftParen, "in prototype").has_value())
        return nullptr;
 
 
     std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> ArgNames;
-    while (this->_cToken.kind() == Token::Kind::Identifier)
+    while (this->_cToken.is_kind(Token::Kind::Identifier))
     {
 
         auto _a = (this->_cToken.lexeme());

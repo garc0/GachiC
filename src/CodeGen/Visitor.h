@@ -74,6 +74,8 @@ public:
     template<class T> llvm::Value * operator()(VariableExprNode &, T &);
     template<class T> llvm::Value * operator()(WhileExpr &, T &);
     template<class T> llvm::Value * operator()(TypeNode &, T &);
+    template<class T> llvm::Value * operator()(StickNode &, T &);
+
 
     template<class RL = rvalue, class T>
     auto expr_visit(T &node){

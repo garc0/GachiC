@@ -14,15 +14,13 @@ llvm::Function * VisitorFunction::operator()(PrototypeNode &prot_){
     auto Name = prot_.getName();
     auto RetType = prot_.getTypeRet();
 
-    std::variant<lvalue, rvalue> r{rvalue()};
-
     for(auto &i: prot_.Args){
-        llvm::Type * ty = reinterpret_cast<llvm::Type*>(std::visit(VisitorExpr{}, *i.second.get(), r));
+        llvm::Type * ty = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*i.second.get()));
 
         f_args.push_back(ty);
     }
 
-    llvm::Type * ret_ty = reinterpret_cast<llvm::Type*>(std::visit(VisitorExpr{}, *RetType, r));
+    llvm::Type * ret_ty = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*RetType));
 
     llvm::FunctionType *FT =
         llvm::FunctionType::get(ret_ty, f_args, false);
@@ -60,8 +58,6 @@ llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(TheContext, "entry", TheFunction);
     Builder.SetInsertPoint(BB);
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-
     NamedValues.clear();
     for (auto &Arg : TheFunction->args()) {
 
@@ -73,7 +69,7 @@ llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
         }, *FunctionProtos[proto_name].get());
 
         
-        llvm::Type * ty = reinterpret_cast<llvm::Type*>(std::visit(VisitorExpr{}, *arg_type, r));
+        llvm::Type * ty = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*arg_type));
 
         llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), ty);
 
@@ -84,7 +80,7 @@ llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
 
     auto Body = func_.getBody();
 
-    if (llvm::Value * RetVal = std::visit(VisitorExpr{}, *Body, r)) {
+    if (llvm::Value * RetVal = VisitorExpr{}.expr_visit(*Body)) {
         verifyFunction(*TheFunction);
         return TheFunction;
     }
@@ -113,10 +109,11 @@ llvm::Value * VisitorExpr::operator()(ArrayExprNode &node, T & is_l){
         _v_ptr = (_variable->second.first);
     }
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
-    auto _i = std::visit(*this, *node._index.get(), r);
+    std::vector<llvm::Value *> indexList = { llvm::ConstantInt::get(TheContext, llvm::APInt(32, 0)) };
 
-    llvm::Value * indexList[2] = { llvm::ConstantInt::get(TheContext, llvm::APInt(32, 0)), _i };
+    for(auto &i: node._indexes){
+        indexList.push_back(this->expr_visit(*i.get()));
+    }
 
     if(!_v_ptr->getType()->isPointerTy())
         return LogErrorV("This is not a pointer, sucker!");
@@ -133,9 +130,8 @@ template<class T>
 llvm::Value * VisitorExpr::operator()(ArrayInitNode &node, T &){
     std::vector<llvm::Constant * > elems;
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
     for(int i = 0; i < node._elements.size(); i++){
-        llvm::Value* to_push = std::visit(*this, *node._elements[i].get(), r);
+        llvm::Value* to_push = this->expr_visit(*node._elements[i].get());
         elems.push_back((llvm::Constant *)to_push);
     }
 
@@ -153,7 +149,7 @@ llvm::Value * VisitorExpr::operator()(StringNode &node, T &){
 template<class T>
 llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
 
-    if (node.Op.kind() == Token::Kind::Equal) {
+    if (node.Op.is_kind(Token::Kind::Equal)) {
         llvm::Value * Variable = this->expr_visit<lvalue>(*node.LHS.get());    
 
         if(!Variable){
@@ -174,7 +170,7 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
     }
 
 
-    if(node.Op.kind() == Token::Kind::Dot){
+    if(node.Op.is_kind(Token::Kind::Dot)){
         
         llvm::Value * variable = this->expr_visit<lvalue>(*node.LHS.get());
 
@@ -210,7 +206,10 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         if(i == struct_def.size())
             return LogErrorV("Not found a field of structure");
         
-        llvm::Value * indexList[2] = {llvm::ConstantInt::get(TheContext, llvm::APInt(32, 0)), llvm::ConstantInt::get(TheContext, llvm::APInt(32, i))};
+        llvm::Value * indexList[2] = {
+            llvm::ConstantInt::get(TheContext, llvm::APInt(32, 0)), 
+            llvm::ConstantInt::get(TheContext, llvm::APInt(32, i))
+            };
 
         auto elem_ptr = Builder.CreateGEP(variable, indexList);
 
@@ -218,7 +217,7 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
         else return Builder.CreateLoad(elem_ptr);
     }
 
-    if(node.Op.kind() == Token::Kind::Ass){
+    if(node.Op.is_kind(Token::Kind::Ass)){
         llvm::Value * L = this->expr_visit(*node.LHS.get());
         llvm::Type * R = reinterpret_cast<llvm::Type*>(this->expr_visit(*node.RHS.get()));
 
@@ -390,18 +389,15 @@ llvm::Value * VisitorExpr::operator()(StructNode &node, T &){
  
     std::vector<std::pair<std::string, llvm::Type*>> type_elements;
 
-    std::variant<lvalue, rvalue> r{rvalue()};
-
     for(auto &i: node._elements)
     {
         type_elements.push_back({i.first,
         reinterpret_cast<llvm::Type*>(
-            std::visit(*this, *i.second.get(), r)
+            this->expr_visit(*i.second.get())
         )});
     }
 
     StructFields[struct_val] = type_elements;
-
 
     std::vector<llvm::Type * > struct_body;
 
@@ -426,9 +422,8 @@ llvm::Value * VisitorExpr::operator()(StructExprNode &node, T &){
 
     std::vector<llvm::Constant *> fields;
 
-    std::variant<lvalue, rvalue> r{rvalue{}};
     for(auto & i : node._elements){
-        fields.push_back((llvm::Constant *)(std::visit(*this, *i.second.get(), r)));
+        fields.push_back((llvm::Constant *)(this->expr_visit(*i.second.get())));
     }
 
     auto const_struct = llvm::ConstantStruct::get(
@@ -499,30 +494,31 @@ llvm::Value * VisitorExpr::operator()(VarExprNode &node, T &){
         llvm::Value * InitVal;
         if (Init) {
             if (!InitVal)
-            return nullptr;
-    } else 
-        InitVal = llvm::ConstantInt::get(TheContext, llvm::APInt(64, (uint64_t)0));
+                return nullptr;
+        } else 
+            InitVal = llvm::ConstantInt::get(TheContext, llvm::APInt(64, (uint64_t)0));
 
-    InitVal = this->expr_visit(*Init);
+        InitVal = this->expr_visit(*Init);
 
-    llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, "", InitVal->getType());
+        llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, "", InitVal->getType());
 
-    Builder.CreateStore(InitVal, Alloca);
+        Builder.CreateStore(InitVal, Alloca);
 
-    std::visit(overload{
-        [&](BlockNode &node){
-            node.OldBindings.push_back(std::get<0>(NamedValues[VarName]));
-        },
-        [](auto &){ return; }
-        }, *node.l_block);
+        std::visit(overload{
+            [&](BlockNode &node){
+                node.OldBindings.push_back(std::get<0>(NamedValues[VarName]));
+            },
+            [](auto &){ return; }
+            }, *node.l_block);
 
 
-    ValToRet = std::get<0>(NamedValues[VarName]) = Alloca;
+        ValToRet = std::get<0>(NamedValues[VarName]) = Alloca;
     }
 
     std::visit(overload{
     [&](BlockNode &bl){
-        bl.VarNames = std::move(node.VarNames);
+        for(auto &i : node.VarNames)
+            bl.VarNames.push_back(std::move(i));
     },
     [](auto &){ return; }
     }, *node.l_block);  
@@ -548,6 +544,100 @@ llvm::Value * VisitorExpr::operator()(VariableExprNode &node, T &){
 
     if constexpr (std::is_same<T, lvalue>()) return V;
     else return Builder.CreateLoad(V);
+}
+
+template<class T> 
+llvm::Value * VisitorExpr::operator()(StickNode &node, T &){
+    
+    llvm::Value * ValToRet = nullptr;
+
+    llvm::Function * TheFunction = Builder.GetInsertBlock()->getParent();
+
+    const std::string &VarName = node._val.first;
+
+    if(!node._to_alloc){
+        llvm::Function * CalleeF = getFunction("free");
+
+        if (!CalleeF){
+            std::vector<llvm::Type*> f_args = {
+                llvm::Type::getInt8PtrTy(TheContext)
+            };
+
+            llvm::Type * ret_ty = llvm::Type::getVoidTy(TheContext);
+
+            llvm::FunctionType *FT =
+                llvm::FunctionType::get(ret_ty, f_args, false);
+
+            CalleeF =
+                llvm::Function::Create(FT, llvm::Function::ExternalLinkage, "free", TheModule.get());
+        }
+
+        std::vector<llvm::Value *> ArgsV{
+           Builder.CreateBitCast(Builder.CreateLoad(std::get<0>(NamedValues[VarName])), llvm::Type::getInt8PtrTy(TheContext))
+        };
+
+        Builder.CreateCall(CalleeF, ArgsV);
+
+        return llvm::Constant::getNullValue(llvm::Type::getInt64Ty(TheContext));
+    }
+
+    auto ty = reinterpret_cast<llvm::Type*>(this->expr_visit(*node._val.second.get()));
+
+    auto ty_size = TheModule->getDataLayout().getTypeAllocSize(ty);
+
+    llvm::Function * CalleeF = getFunction("malloc");
+    if (!CalleeF){
+        std::vector<llvm::Type*> f_args = {
+            llvm::Type::getInt64Ty(TheContext)
+        };
+
+        llvm::Type * ret_ty = llvm::Type::getInt8PtrTy(TheContext);
+
+        llvm::FunctionType *FT =
+            llvm::FunctionType::get(ret_ty, f_args, false);
+
+        CalleeF =
+            llvm::Function::Create(FT, llvm::Function::ExternalLinkage, "malloc", TheModule.get());
+
+    }
+
+    std::vector<llvm::Value *> ArgsV{
+        llvm::ConstantInt::get(TheContext, llvm::APInt(sizeof(std::size_t)*8, ty_size.getFixedSize()))
+        };
+
+    llvm::Value * InitVal = Builder.CreateCall(CalleeF, ArgsV);
+
+        llvm::AllocaInst * Alloca;
+
+    //if(ty->isArrayTy()){
+    //        Alloca = CreateEntryBlockAlloca(TheFunction, "", ty);
+    //        InitVal = Builder.CreateBitCast(InitVal, ty);
+    //}else{   
+        Alloca = CreateEntryBlockAlloca(TheFunction, "", ty->getPointerTo());
+        InitVal = Builder.CreateBitCast(InitVal, ty->getPointerTo());
+   // }
+
+    Builder.CreateStore(InitVal, Alloca);
+
+    std::visit(overload{
+        [&](BlockNode &node){
+            node.OldBindings.push_back(std::get<0>(NamedValues[VarName]));
+        },
+        [](auto &){ return; }
+        }, *node._block);
+
+
+    ValToRet = std::get<0>(NamedValues[VarName]) = Alloca;
+
+
+    std::visit(overload{
+        [&](BlockNode &bl){
+            bl.VarNames.push_back(std::move(node._val));
+        },
+        [](auto &){ return; }
+    }, *node._block);  
+
+    return ValToRet;
 }
 
 template<class T>
@@ -702,30 +792,32 @@ template<class T> llvm::Value * VisitorExpr::operator()(TypeNode &node, T &){
             return llvm::PointerType::get(_helper(++tv, end), 0);
         }
 
-        auto ty = tv->first;
+        if(tv->first == TypeNode::type_id::array){
+            std::size_t sz = std::stoll(tv->second.c_str());
+            return llvm::ArrayType::get(_helper(++tv, end), sz);
+        }
 
-        if(ty == TypeNode::type_id::nothing) return llvm::Type::getVoidTy(TheContext);
+        switch(tv->first){
+            case TypeNode::type_id::nothing: return llvm::Type::getVoidTy(TheContext);
+            case TypeNode::type_id::u1: return llvm::Type::getInt8Ty(TheContext);
 
-        if(ty == TypeNode::type_id::u1) return llvm::Type::getInt8Ty(TheContext);
+            case TypeNode::type_id::u8:  return llvm::Type::getInt8Ty(TheContext);
+            case TypeNode::type_id::u16: return llvm::Type::getInt16Ty(TheContext);
+            case TypeNode::type_id::u32: return llvm::Type::getInt32Ty(TheContext);
+            case TypeNode::type_id::u64: return llvm::Type::getInt64Ty(TheContext); 
 
-        if(ty == TypeNode::type_id::u8)  return llvm::Type::getInt8Ty(TheContext);
-        if(ty == TypeNode::type_id::u16) return llvm::Type::getInt16Ty(TheContext);
-        if(ty == TypeNode::type_id::u32) return llvm::Type::getInt32Ty(TheContext);
-        if(ty == TypeNode::type_id::u64) return llvm::Type::getInt64Ty(TheContext);
-
-        if(ty == TypeNode::type_id::i8)  return llvm::Type::getInt8Ty(TheContext);
-        if(ty == TypeNode::type_id::i16) return llvm::Type::getInt16Ty(TheContext);
-        if(ty == TypeNode::type_id::i32) return llvm::Type::getInt32Ty(TheContext);
-        if(ty == TypeNode::type_id::i64) return llvm::Type::getInt64Ty(TheContext);
-
-        if(ty == TypeNode::type_id::f32) return llvm::Type::getFloatTy(TheContext);
-        if(ty == TypeNode::type_id::f64) return llvm::Type::getDoubleTy(TheContext);
+            case TypeNode::type_id::i8:  return llvm::Type::getInt8Ty(TheContext);
+            case TypeNode::type_id::i16: return llvm::Type::getInt16Ty(TheContext);
+            case TypeNode::type_id::i32: return llvm::Type::getInt32Ty(TheContext);
+            case TypeNode::type_id::i64: return llvm::Type::getInt64Ty(TheContext); 
+            case TypeNode::type_id::f32: return llvm::Type::getFloatTy(TheContext);
+            case TypeNode::type_id::f64: return llvm::Type::getDoubleTy(TheContext);
+        }
 
         auto f = NamedStructures.find(tv->second);
 
         if(f != NamedStructures.end())
             return f->second;
-
         return nullptr;
     };
 

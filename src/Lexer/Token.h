@@ -22,7 +22,11 @@ public:
         Identifier,
         
         Var,
+        Stick,
+        Your,
         In,
+        My,
+        Out,
         Cum,
 
         Def,
@@ -71,6 +75,7 @@ public:
         Colon,
         SingleQuote,
         DoubleQuote,
+        Char,
         Comment,
         Return,
         Pipe,
@@ -119,14 +124,14 @@ private:
 static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
     static const char * const names[]{
             "Number", "Identifier",
-            "Var", "In", "Cum",
+            "Var", "Stick", "Your", "In", "My", "Out", "Cum",
             "Def", "Master", "Struct", "Array", "Extern", 
             "If", "Else", "For", "While",
             "Binary", "Unary", 
             "LeftParen", "RightParen", "LeftSquare", "RightSquare", "LeftCurly", "RightCurly",
             "LessThan", "LessEqual", "GreaterThan", "GreaterEqual", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "Plus", "Minus", "Asterisk", "Not", "NotEqual", "Slash", 
-            "Semicolon",   "Hash", "Dot", "Comma", "Colon",      
-            "SingleQuote", "DoubleQuote", "Comment", "Return", "Pipe", "End",
+            "Semicolon", "Hash", "Dot", "Comma", "Colon",      
+            "SingleQuote", "DoubleQuote", "Char", "Comment", "Return", "Pipe", "End",
             "Unexpected",
     };
     return os << names[static_cast<int>(kind)];

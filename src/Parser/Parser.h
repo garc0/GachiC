@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 #include <optional>
+#include <functional>
 
 
 #include "../Lexer/Lexer.h"
@@ -103,6 +104,7 @@ private:
     std::unique_ptr<ASTNode> parseString();
     std::unique_ptr<ASTNode> parseArray();
     std::unique_ptr<ASTNode> parseVar();
+    std::unique_ptr<ASTNode> parseStick();
     std::unique_ptr<ASTNode> parseFor();
     std::unique_ptr<ASTNode> parseWhile();
     std::unique_ptr<ASTNode> parseIf();

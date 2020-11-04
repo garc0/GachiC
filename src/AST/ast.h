@@ -53,8 +53,8 @@ public:
 
 class ArrayExprNode {
 public:
-    ArrayExprNode(std::string var_name_, std::unique_ptr<ASTNode> index_): 
-            _var_name(std::move(var_name_)), _index(std::move(index_)){}
+    ArrayExprNode(std::string var_name_, std::vector<std::unique_ptr<ASTNode>> indexes_): 
+            _var_name(std::move(var_name_)), _indexes(std::move(indexes_)){}
 
 
     ArrayExprNode() = delete;
@@ -64,7 +64,7 @@ public:
     ArrayExprNode &operator=(ArrayExprNode &&) = default;
     ~ArrayExprNode() = default;
 
-    std::unique_ptr<ASTNode> _index;
+    std::vector<std::unique_ptr<ASTNode>> _indexes;
     std::string _var_name;
 };
 
@@ -211,7 +211,8 @@ public:
 
 class NumberExprNode  {
 public:
-  NumberExprNode(std::string Val) : _val(Val) {}
+  NumberExprNode(std::string val_)
+    : _val(val_) {}
 
   NumberExprNode() = delete;
   NumberExprNode &operator=(const NumberExprNode &) = delete;
@@ -225,7 +226,8 @@ public:
 
 class CharNode  {
 public:
-  CharNode(unsigned char val_) : _val(val_) {}
+  CharNode(unsigned char val_)
+    : _val(val_) {}
 
   CharNode() = delete;
   CharNode &operator=(const CharNode &) = delete;
@@ -239,7 +241,8 @@ public:
 
 class StringNode  {
 public:
-  StringNode(std::string val_) : _val(std::move(val_)) {}
+  StringNode(std::string val_)
+    : _val(std::move(val_)) {}
 
   StringNode() = delete;
   StringNode &operator=(const StringNode &) = delete;
@@ -249,6 +252,27 @@ public:
   ~StringNode() = default;
 
   std::string _val;
+};
+
+class StickNode {
+public:
+  StickNode(ASTNode * block_, 
+        std::pair<std::string, std::unique_ptr<ASTNode>> val_, 
+        bool to_alloc_ = true
+      )
+    : _block(block_), _val(std::move(val_)), _to_alloc(to_alloc_) {}
+
+  StickNode() = delete;
+  StickNode &operator=(const StickNode &) = delete;
+  StickNode(const StickNode&) = delete;
+  StickNode(StickNode &&) = default;
+  StickNode &operator=(StickNode &&) = default;
+  ~StickNode() = default;
+
+  std::pair<std::string, std::unique_ptr<ASTNode>> _val;
+  ASTNode * _block;
+
+  bool _to_alloc = true;
 };
 
 class TypeNode  {
@@ -276,12 +300,14 @@ public:
     f32,
     f64,
 
-    struct_type
+    struct_type,
+    array,
   }; 
 
   using type_pair = std::pair<type_id, std::string>;
 
-  TypeNode(std::vector<type_pair> t) : _t(std::move(t)) {}
+  TypeNode(std::vector<type_pair> t)
+    : _t(std::move(t)) {}
 
   TypeNode() = delete;
   TypeNode &operator=(const TypeNode &) = delete;
@@ -339,8 +365,8 @@ class StructNode {
 public:
 
   StructNode(std::string struct_name, 
-      std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> elems):
-          _struct_name(std::move(struct_name)), _elements(std::move(elems))
+      std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> elems)
+      : _struct_name(std::move(struct_name)), _elements(std::move(elems))
           {}
 
   StructNode() = delete;
@@ -361,10 +387,8 @@ class StructExprNode  {
 public:
   StructExprNode(
     std::string Name, 
-    std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> elems) : 
-    Name(std::move(Name)),
-    _elements(std::move(elems)
-    ) {}
+    std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> elems)
+      : Name(std::move(Name)), _elements(std::move(elems)) {}
 
   StructExprNode() = delete;
 
@@ -440,7 +464,8 @@ class WhileExpr {
 public:
 
     WhileExpr(std::unique_ptr<ASTNode> cond_, std::optional<std::unique_ptr<ASTNode>> step_,
-                std::unique_ptr<ASTNode> body_):
+              std::unique_ptr<ASTNode> body_)
+                :
         _cond(std::move(cond_)), _step(std::move(step_)), _body(std::move(body_)){}
 
     WhileExpr() = delete;

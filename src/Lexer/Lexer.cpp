@@ -125,9 +125,13 @@ std::optional<Token::Kind> stotok(std::string identifier){
     static const std::map<std::string, Token::Kind> keys = {
         {"slave", Token::Kind::Def},
         {"var", Token::Kind::Var},
-        {"in", Token::Kind::In},
         {"cumming", Token::Kind::Return},
+        {"stick", Token::Kind::Stick},
+        {"your", Token::Kind::Your},
+        {"in", Token::Kind::In},
+        {"my", Token::Kind::My},
         {"cum", Token::Kind::Cum},
+        {"out", Token::Kind::Out},
         {"master", Token::Kind::Master},
         {"ass", Token::Kind::Ass},
         {"extern", Token::Kind::Extern},
@@ -165,8 +169,7 @@ Token Lexer::number() noexcept {
     std::string n{};
 
     if( this->_s[_i] == 'x' ||
-        this->_s[_i] == 'b' ||
-        this->_s[_i] == '.') 
+        this->_s[_i] == 'b') 
         this->_i++;
     
     while ( isdigit(this->_s[_i])   ||
@@ -226,7 +229,7 @@ Token Lexer::parse_char() noexcept{
         }
 
 
-        this->_tokens.push_back(Token(Token::Kind::Identifier, (const char*)&c, 1));
+        this->_tokens.push_back(Token(Token::Kind::Char, (const char*)&c, 1));
         this->_i++;
     }
 
@@ -265,7 +268,7 @@ Token Lexer::parse_string() noexcept{
 
         }
 
-        this->_tokens.push_back(Token(Token::Kind::Identifier, (const char*)&c, 1));
+        this->_tokens.push_back(Token(Token::Kind::Char, (const char*)&c, 1));
         this->_i++;
     }
 
