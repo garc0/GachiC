@@ -25,18 +25,27 @@ public:
     }
 
     void analyze(std::string_view s){
+        _line++;
         if(s == "") return;
         this->_s = std::move(s);
         this->_i = 0;
 
         auto tok = parse();
 
+        tok.set_line(_line);
+        tok.set_pos(_i - tok.lexeme().length() + 1);
+
         _tokens.push_back(tok);
         while(tok.kind() != Token::Kind::End && this->_i < this->_s.size())
-            _tokens.push_back(tok = parse());
+        {
+            tok = parse();
+
+            tok.set_line(_line);
+            tok.set_pos(_i - tok.lexeme().length() + 1);
+            _tokens.push_back(tok);
+        }
 
         _it = _tokens.begin();
-
         return;
     }
 
@@ -73,6 +82,8 @@ private:
     std::vector<Token>::iterator _it;
 
     std::string_view _s;
+
+    std::size_t _line = 0;
     std::size_t _i = 0;
 };
 

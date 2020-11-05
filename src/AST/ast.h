@@ -258,9 +258,10 @@ class StickNode {
 public:
   StickNode(ASTNode * block_, 
         std::pair<std::string, std::unique_ptr<ASTNode>> val_, 
-        bool to_alloc_ = true
+        bool to_alloc_ = true,
+        std::unique_ptr<ASTNode> size_arr_ = nullptr
       )
-    : _block(block_), _val(std::move(val_)), _to_alloc(to_alloc_) {}
+    : _block(block_), _val(std::move(val_)), _to_alloc(to_alloc_), _size_arr(std::move(size_arr_)) {}
 
   StickNode() = delete;
   StickNode &operator=(const StickNode &) = delete;
@@ -270,6 +271,7 @@ public:
   ~StickNode() = default;
 
   std::pair<std::string, std::unique_ptr<ASTNode>> _val;
+  std::unique_ptr<ASTNode> _size_arr;
   ASTNode * _block;
 
   bool _to_alloc = true;
@@ -496,13 +498,8 @@ std::unique_ptr<DefNode> make_def(Args&&... args) {
 #include "../CodeGen/Visitor.h"
 
 
-static std::unique_ptr<ASTNode> LogError(std::string_view Str) {
+static llvm::Value * LogErrorV(std::string Str) {
   std::cerr << "Error: " << (Str) << std::endl;
-  return nullptr;
-}
-
-static llvm::Value * LogErrorV(std::string_view Str) {
-  LogError(Str);
   return nullptr;
 }
 

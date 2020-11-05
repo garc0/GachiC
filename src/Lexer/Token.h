@@ -96,7 +96,7 @@ public:
 
     Kind kind() const  { return m_kind; }
 
-    void kind(Kind kind)  { m_kind = kind; }
+    void kind(Kind kind) { m_kind = kind; }
 
     bool is_kind(Kind kind) const  { return m_kind == kind; }
 
@@ -109,6 +109,12 @@ public:
 
     const std::string & lexeme() const { return m_lexeme; }
 
+    const auto get_line() const { return _line; }
+    const auto get_pos() const { return _pos; }
+
+    void set_line(std::size_t line_) { _line = line_; }
+    void set_pos(std::size_t pos_) { _pos = pos_; }
+
     void lexeme(std::string lexeme) {
         m_lexeme = std::move(lexeme);
     }
@@ -117,8 +123,8 @@ private:
     Kind            m_kind{};
     std::string     m_lexeme{};
 
-    std::size_t line_ = 0;
-    std::size_t pos_ = 0;
+    std::size_t _line = 0;
+    std::size_t _pos = 0;
 };
 
 static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {

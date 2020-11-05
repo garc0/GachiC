@@ -144,7 +144,7 @@ void dump_tokens(Lexer * lex){
 
   Token tok = lex->get();
   while(!tok.is_kind(Token::Kind::End)){
-    std::cout << tok.kind() << " (" << tok.lexeme() << ") \n";
+    std::cout << tok.kind() << " (" << tok.lexeme() << ") | " << tok.get_line() << " | " << tok.get_pos() << std::endl;
     tok = lex->next();
   }
   lex->to_begin();

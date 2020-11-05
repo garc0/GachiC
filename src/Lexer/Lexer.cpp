@@ -199,6 +199,17 @@ Token Lexer::slash_or_comment() noexcept {
     return Token(Token::Kind::Slash, &_s[i], 1);
 }
 
+inline char what_is_that(char c){
+    switch(c){
+        case 'n': return '\n';
+        case 't': return '\t';
+        case '0': return'\0'; 
+        case '\\': return '\\';
+    }
+
+    return c;
+}
+
 Token Lexer::parse_char() noexcept{
     
     auto atom = [&](Token::Kind kind) -> Token{
@@ -212,23 +223,7 @@ Token Lexer::parse_char() noexcept{
 
     if(c == '\\'){
         _i++;
-        c = this->_s[_i];
-        switch(c){
-            case 'n':
-                c = '\n';
-                break;
-            case 't':
-                c = '\t';
-                break;  
-            case '\\':
-                c = '\\';
-                break;  
-            case '0':
-                c = '\0';
-                break;    
-        }
-
-
+        c = what_is_that(this->_s[_i]);
         this->_tokens.push_back(Token(Token::Kind::Char, (const char*)&c, 1));
         this->_i++;
     }
@@ -250,22 +245,7 @@ Token Lexer::parse_string() noexcept{
 
         if(c == '\\'){
             _i++;
-            c = this->_s[_i];
-            switch(c){
-                case 'n':
-                    c = '\n';
-                    break;
-                case 't':
-                    c = '\t';
-                    break;  
-                case '\\':
-                    c = '\\';
-                    break;  
-                case '0':
-                    c = '\0';
-                    break;    
-            }
-
+            c = what_is_that(this->_s[_i]);
         }
 
         this->_tokens.push_back(Token(Token::Kind::Char, (const char*)&c, 1));

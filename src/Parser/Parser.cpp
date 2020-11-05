@@ -93,7 +93,7 @@ std::unique_ptr<ASTNode> Parser::parseIdentifier() {
 
         while(this->_cToken.kind() != Token::Kind::RightCurly){
             if(!this->_cToken.is_kind(Token::Kind::Identifier)){
-                std::cout << "Field name, ah?" << std::endl;
+                std::cerr << "Field name, ah?" << std::endl;
                 return nullptr;
             }
 
@@ -106,7 +106,7 @@ std::unique_ptr<ASTNode> Parser::parseIdentifier() {
             std::unique_ptr<ASTNode> val = this->parseExpression();
 
             if(!val) {
-                std::cout << "Why can't you be just a normal!?" << std::endl;
+                std::cerr << "Why can't you be just a normal!?" << std::endl;
                 return nullptr;
             }
 
@@ -173,10 +173,10 @@ std::unique_ptr<ASTNode> Parser::parseIf() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseFor() {
-    this->eat(); // eat the for.
+    this->expectNext(Token::Kind::For);
 
-    if (this->_cToken.kind() != Token::Kind::Identifier)
-        return LogError("expected identifier after for");
+    if (this->_cToken.is_kind(Token::Kind::Identifier))
+        return log_err("expected identifier after for");
 
     std::string IdName(this->_cToken.lexeme());
     this->eat(); // eat identifier.
@@ -281,7 +281,7 @@ std::unique_ptr<ASTNode> Parser::parseType(){
     if(s == "f32")      t_v.push_back({TypeNode::type_id::f32, s.c_str()});
     if(s == "f64")      t_v.push_back({TypeNode::type_id::f64, s.c_str()});
 
-    // oops
+    // it's fine
     t_v.push_back({TypeNode::type_id::struct_type, s.c_str()});
 
     return make_node<TypeNode>(std::move(t_v));
@@ -293,7 +293,7 @@ std::unique_ptr<ASTNode> Parser::parseVar() {
     std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> VarNames;
 
     if (this->_cToken.kind() != Token::Kind::Identifier)
-      return LogError("expected identifier after var");
+      return log_err("expected identifier after var");
 
     while (true) {
         std::string Name(this->_cToken.lexeme());
@@ -318,7 +318,7 @@ std::unique_ptr<ASTNode> Parser::parseVar() {
         this->eat();
 
         if (this->_cToken.kind() != Token::Kind::Identifier)
-            return LogError("expected identifier list after var");
+            return log_err("expected identifier list after var");
     }
 
     return make_node<VarExprNode>(_cBlock.get(), std::move(VarNames));
@@ -345,6 +345,16 @@ std::unique_ptr<ASTNode> Parser::parseStick() {
 
     this->expectNext(Token::Kind::Your);
 
+    std::unique_ptr<ASTNode> sz = nullptr;
+
+    if(this->_cToken.is_kind(Token::Kind::LeftSquare)){
+        this->expectNext(Token::Kind::LeftSquare);
+
+        sz = parseExpression();
+
+        this->expectNext(Token::Kind::RightSquare);
+    }
+
     _to_stick.second = parseType();
 
     if(!_to_stick.second){
@@ -362,20 +372,20 @@ std::unique_ptr<ASTNode> Parser::parseStick() {
 
     this->eat();
 
-   return make_node<StickNode>(_cBlock.get(), std::move(_to_stick), true);
+   return make_node<StickNode>(_cBlock.get(), std::move(_to_stick), true, std::move(sz));
 }
 
 std::unique_ptr<ASTNode> Parser::parseStruct() {
     this->eat();
 
     if(this->_cToken.kind() != Token::Kind::Identifier)
-        return LogError("expected Name after 'struct'");
+        return log_err("expected Name after 'struct'");
 
     std::string name_struct(this->_cToken.lexeme());
     this->eat();
 
     if(this->_cToken.kind() != Token::Kind::LeftCurly)
-        return LogError("expected LeftCurly after 'struct'");
+        return log_err("expected LeftCurly after 'struct'");
 
     this->eat();
 
@@ -383,7 +393,7 @@ std::unique_ptr<ASTNode> Parser::parseStruct() {
 
     while(this->_cToken.kind() != Token::Kind::RightCurly){
         if(this->_cToken.kind() != Token::Kind::Identifier)
-            return LogError("expected Identifier in struct");
+            return log_err("expected Identifier in struct");
 
         std::string field_name(this->_cToken.lexeme());
         this->eat();
@@ -459,7 +469,7 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
     switch (this->_cToken.kind()) {
         default:
         std::cout  << this->_cToken.kind() << "\n" ;
-        return LogError("unknown token when expecting an expression");
+        return log_err("unknown token when expecting an expression");
 
         case Token::Kind::Identifier:   return parseIdentifier();
         case Token::Kind::SingleQuote:  return parseChar();
@@ -546,18 +556,13 @@ std::unique_ptr<ASTNode> Parser::parseExpression() {
     return parseBinOpRHS(0, std::move(LHS));
 }
 
-static std::unique_ptr<DefNode> LogErrorP(const char *Str) {
-  std::cerr << "Error: " << (Str) << std::endl;
-  return nullptr;
-}
-
 std::unique_ptr<DefNode> Parser::parsePrototype() {
 
     std::string function_name;
 
-    if(this->_cToken.kind() == Token::Kind::Identifier)
+    if(this->_cToken.is_kind(Token::Kind::Identifier))
         function_name = this->_cToken.lexeme();
-    else if(this->_cToken.kind() == Token::Kind::Master)
+    else if(this->_cToken.is_kind(Token::Kind::Master))
         function_name = "main";
     
     else return nullptr;
@@ -617,7 +622,7 @@ std::unique_ptr<DefNode> Parser::parseDef() {
      return nullptr;
 
     std::unique_ptr<ASTNode> E = parseExpression();
-    if (!E)  std::cout << "Fucking bad" << std::endl;
+    if (!E)  std::cerr << "Fucking bad" << std::endl;
 
     return make_def<FunctionNode>(std::move(Proto), std::move(E));
 }
@@ -629,7 +634,7 @@ std::unique_ptr<DefNode> Parser::parseMain() {
      return nullptr;
 
     std::unique_ptr<ASTNode> E = parseExpression();
-    if (!E)  std::cout << "Fucking bad" << std::endl;
+    if (!E)  std::cerr << "Fucking bad" << std::endl;
 
     return make_def<FunctionNode>(std::move(Proto), std::move(E));
 }

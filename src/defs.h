@@ -33,7 +33,7 @@ template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
 using ASTNode = std::variant<
-            //std::nullptr_t, 
+            std::nullptr_t, 
             ArrayExprNode, 
             ArrayInitNode,
             BinaryExprNode,
@@ -55,7 +55,7 @@ using ASTNode = std::variant<
             >;
 
 using DefNode = std::variant<
-            //std::nullptr_t,
+            std::nullptr_t,
             PrototypeNode, FunctionNode>;
 
 

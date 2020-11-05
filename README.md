@@ -48,10 +48,12 @@ $ make
 
 ##### Windows
 
-* Ah, shit, you have to either compliment from source, or download ready-made clang+llvm+lld libs
+* Ah, shit, you have to either compile from source, or download ready-made clang+llvm+lld libs
 * Open "x64 Native Tools Command Prompt"
 
 ```sh
+mkdir build
+cd build
 cmake .. -Thost=x64 -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=path\to\llvm -DCMAKE_BUILD_TYPE=Release
 msbuild -p:Configuration=Release ALL_BUILD.vcxproj 
 ```
@@ -114,14 +116,10 @@ When a variable is declared, it does not need to be assigned a type, its type wi
 ```
 If you want to set the type of a variable explicitly, then use the casting operator "ass"
 ```swift
-  // i32
-  var h32 = 123 ass i32;
   // i64
   var h64 = 123 ass i64;
   // f64
   var h64 = 123 ass f64;
-  // f32
-  var e   = 123.123 ass f32;
   // i32
   var e_  = 123.123 ass i32;
   // *i8
@@ -145,8 +143,6 @@ Example:
 
 Syntax:
 ```swift
-  var n = read();
-
   if(cond){
     true_block
   } else {
@@ -158,8 +154,6 @@ Syntax:
 ```
 Example:
 ```swift
-  var n = read();
-
   if(n % 2 == 0)
     print("That's good\n")
   else
@@ -167,6 +161,20 @@ Example:
 ```
 
 #### Structure types
+
+Declaration syntax:
+```swift
+struct struct_name{
+  field_name: type;
+  field_name_1 : type;
+  ...
+}
+```
+
+Initialization syntax:
+```swift
+  var struct_var = struct_name{ field_name: value, field_name_1: value, ...};
+```
 
 Example:
 ```swift
@@ -206,19 +214,34 @@ The type of array elements determines the type of its first element
 
 #### Memory management
 
+Pointers:
 ```swift
-extern printInt(x: i32) cum nothing;
+  var x = 100 ass i32;
+  // *i32
+  var y = &x;
+  var z = *y;
+```
 
+Dynamic memory allocation:
+To allocate, operate and free memory
+```swift
+  stick your i32 in my val;
+  val = 66;
+  stick out val;
+```
+
+Example:
+```swift
 struct Foo{
   a: *i32;
 };
 
 master() cum i32
 {
-  var tmp = 66;
+  var tmp = 96;
   var y = Foo{a : &tmp};
   var n = &(y.a);
-  **(n ass **i32) = 99;
+  **(n ass **i32) = 69;
 
   printInt(*(y.a));
   printInt((1 + **n));

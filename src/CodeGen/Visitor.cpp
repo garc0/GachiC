@@ -573,7 +573,7 @@ llvm::Value * VisitorExpr::operator()(StickNode &node, T &){
         }
 
         std::vector<llvm::Value *> ArgsV{
-           Builder.CreateBitCast(Builder.CreateLoad(std::get<0>(NamedValues[VarName])), llvm::Type::getInt8PtrTy(TheContext))
+           Builder.CreateBitCast(std::get<0>(NamedValues[VarName]), llvm::Type::getInt8PtrTy(TheContext))
         };
 
         Builder.CreateCall(CalleeF, ArgsV);
@@ -601,23 +601,25 @@ llvm::Value * VisitorExpr::operator()(StickNode &node, T &){
 
     }
 
+    llvm::Value * alloc_size = llvm::ConstantInt::get(TheContext, llvm::APInt(sizeof(std::size_t) * 8, ty_size.getFixedSize()));
+
+    if(node._size_arr != nullptr){
+        auto szArr = this->expr_visit(*node._size_arr.get());
+        alloc_size = (llvm::Value *)Builder.CreateMul(alloc_size, szArr);
+    }
+
     std::vector<llvm::Value *> ArgsV{
-        llvm::ConstantInt::get(TheContext, llvm::APInt(sizeof(std::size_t)*8, ty_size.getFixedSize()))
+        alloc_size
         };
 
-    llvm::Value * InitVal = Builder.CreateCall(CalleeF, ArgsV);
+    llvm::AllocaInst * Alloca = (llvm::AllocaInst *)Builder.CreateCall(CalleeF, ArgsV);
 
-        llvm::AllocaInst * Alloca;
+    if(node._size_arr != nullptr)
+        ty = llvm::ArrayType::get(ty, 0);
 
-    //if(ty->isArrayTy()){
-    //        Alloca = CreateEntryBlockAlloca(TheFunction, "", ty);
-    //        InitVal = Builder.CreateBitCast(InitVal, ty);
-    //}else{   
-        Alloca = CreateEntryBlockAlloca(TheFunction, "", ty->getPointerTo());
-        InitVal = Builder.CreateBitCast(InitVal, ty->getPointerTo());
-   // }
+    Alloca = (llvm::AllocaInst *)Builder.CreateBitCast(Alloca, ty->getPointerTo());
 
-    Builder.CreateStore(InitVal, Alloca);
+    llvm::Value * InitVal = Builder.CreateLoad(Alloca);
 
     std::visit(overload{
         [&](BlockNode &node){
@@ -628,7 +630,6 @@ llvm::Value * VisitorExpr::operator()(StickNode &node, T &){
 
 
     ValToRet = std::get<0>(NamedValues[VarName]) = Alloca;
-
 
     std::visit(overload{
         [&](BlockNode &bl){

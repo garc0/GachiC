@@ -54,9 +54,20 @@ public:
         return _cToken;
     }
 
+    std::unique_ptr<ASTNode> log_err(std::string m){
+        std::cerr << m << std::endl;
+
+        std::cerr << "line = " << _cToken.get_line() << " | pos = " << _cToken.get_pos() << std::endl; 
+
+        return nullptr;
+    }
+
     std::optional<Token> expectNext(Token::Kind kind, std::string descr = ""){
         if(!_cToken.is_kind(kind)){
-            std::cout << "Expected " << kind << " | " << descr <<  std::endl;
+
+            std::stringstream ss;
+            ss << "Expected " << kind << " | " << descr;
+            log_err(ss.str());
             return std::nullopt;
         }
         return this->eat();
