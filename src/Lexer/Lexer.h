@@ -35,14 +35,17 @@ public:
         tok.set_line(_line);
         tok.set_pos(_i - tok.lexeme().length() + 1);
 
-        _tokens.push_back(tok);
+        if(!tok.is_kind(Token::Kind::Comment))
+            _tokens.push_back(tok);
         while(tok.kind() != Token::Kind::End && this->_i < this->_s.size())
         {
             tok = parse();
 
             tok.set_line(_line);
             tok.set_pos(_i - tok.lexeme().length() + 1);
-            _tokens.push_back(tok);
+
+            if(!tok.is_kind(Token::Kind::Comment))
+                _tokens.push_back(tok);
         }
 
         _it = _tokens.begin();

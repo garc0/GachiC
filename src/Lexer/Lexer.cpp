@@ -189,11 +189,11 @@ Token Lexer::slash_or_comment() noexcept {
     
     if (this->_s[_i] == '/') {
         i = ++_i;
-        while (this->_s[_i] != '\0') 
-            if (this->_s[++_i] == '\n') 
+        while (this->_s[_i++] != '\0') 
+            if (this->_s[_i] == '\n')
                 return Token(Token::Kind::Comment, &_s[i], _i - i - 1);
         
-        return Token(Token::Kind::Unexpected, &_s[i], 1);
+        return Token(Token::Kind::Comment, &_s[i], _i - i - 1);
     }
     
     return Token(Token::Kind::Slash, &_s[i], 1);

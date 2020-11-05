@@ -178,6 +178,7 @@ Initialization syntax:
 
 Example:
 ```swift
+extern printInt(x: i32) cum nothing;
 struct Poo{
   a : i32;
 };
@@ -231,6 +232,8 @@ To allocate, operate and free memory
 ```
 
 Example:
+extern printInt(x: i32) cum nothing;
+
 ```swift
 struct Foo{
   a: *i32;
