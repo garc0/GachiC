@@ -442,7 +442,7 @@ std::unique_ptr<ASTNode> Parser::parseChar(){
     this->eat();
 
     if(!this->expectNext(Token::Kind::SingleQuote).has_value())
-    return nullptr;
+        return nullptr;
 
     return make_node<CharNode>(c);
 }
@@ -505,11 +505,31 @@ std::unique_ptr<ASTNode> Parser::parseUnary() {
     return nullptr;
 }
 
+inline bool is_binary_op(Token tok){
+    return tok.is_one_of(
+        Token::Kind::LessThan, 
+        Token::Kind::LessEqual,
+        Token::Kind::GreaterThan,
+        Token::Kind::GreaterEqual,
+        Token::Kind::Modulo,
+        Token::Kind::Equal,
+        Token::Kind::DoubleEqual,
+        Token::Kind::Ass,
+        Token::Kind::Ampersand,
+        Token::Kind::DoubleAmpersand,
+        Token::Kind::Plus,
+        Token::Kind::Minus,
+        Token::Kind::Asterisk,
+        Token::Kind::NotEqual,
+        Token::Kind::Slash,
+        Token::Kind::Colon,
+        Token::Kind::Dot,
+        Token::Kind::DoublePipe
+        );
+}
+
 int32_t Parser::GetTokPrecedence(Token tok) {
-    if (!(tok.kind() >= Token::Kind::LessThan && tok.kind() <= Token::Kind::Slash ||
-     tok.kind() == Token::Kind::Colon ||
-     tok.kind() == Token::Kind::Dot ||
-     tok.kind() == Token::Kind::Equal))
+    if (!is_binary_op(tok))
         return -1;
 
     int32_t TokPrec = 0;
@@ -587,8 +607,7 @@ std::unique_ptr<DefNode> Parser::parsePrototype() {
                     std::string(_a),
                     std::move(parseType())));
         }else {
-            std::cerr << "Argument has no type" << std::endl; 
-            return nullptr;
+            return log_err("Argument has no type"); 
         }
 
         if(!this->_cToken.is_kind(Token::Kind::RightParen))

@@ -29,7 +29,7 @@
 #include <string>
 #include <optional>
 #include <functional>
-
+#include <sstream>
 
 #include "../Lexer/Lexer.h"
 #include "../Lexer/Token.h"
@@ -54,7 +54,7 @@ public:
         return _cToken;
     }
 
-    std::unique_ptr<ASTNode> log_err(std::string m){
+    auto log_err(std::string m){
         std::cerr << m << std::endl;
 
         std::cerr << "line = " << _cToken.get_line() << " | pos = " << _cToken.get_pos() << std::endl; 
@@ -91,7 +91,10 @@ private:
 
     std::vector<std::string> _bOp = {
         "=",
+        "&&",
+        "||",
         "==",
+        "!=",
         "<",
         ">",
         "<=",

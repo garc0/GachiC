@@ -69,6 +69,10 @@ inline Token Lexer::getAtom() noexcept{
             }
             return atom(Token::Kind::Equal);
         case '&':
+            if(this->_s[_i + 1] == '&'){
+                this->_i += 2;
+                return Token(Token::Kind::DoubleAmpersand, &this->_s[_i - 2], 2);
+            }
             return atom(Token::Kind::Ampersand);
         case '+':
             return atom(Token::Kind::Plus);
@@ -99,6 +103,10 @@ inline Token Lexer::getAtom() noexcept{
         case '"':
             return parse_string();
         case '|':
+            if(this->_s[_i + 1] == '|'){
+                this->_i += 2;
+                return Token(Token::Kind::DoublePipe, &this->_s[_i - 2], 2);
+            }
             return atom(Token::Kind::Pipe);
 
         default:
@@ -224,9 +232,10 @@ Token Lexer::parse_char() noexcept{
     if(c == '\\'){
         _i++;
         c = what_is_that(this->_s[_i]);
-        this->_tokens.push_back(Token(Token::Kind::Char, (const char*)&c, 1));
-        this->_i++;
     }
+    this->_tokens.push_back(Token(Token::Kind::Char, (const char*)&c, 1));
+    this->_i++;
+    
 
     return atom(Token::Kind::SingleQuote);
 }

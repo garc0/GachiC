@@ -61,6 +61,7 @@ public:
         DoubleEqual,
         Ass,
         Ampersand,
+        DoubleAmpersand,
         Plus,
         Minus,
         Asterisk,
@@ -79,6 +80,7 @@ public:
         Comment,
         Return,
         Pipe,
+        DoublePipe,
         End,
         Unexpected
     };
@@ -135,9 +137,9 @@ static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
             "If", "Else", "For", "While",
             "Binary", "Unary", 
             "LeftParen", "RightParen", "LeftSquare", "RightSquare", "LeftCurly", "RightCurly",
-            "LessThan", "LessEqual", "GreaterThan", "GreaterEqual", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "Plus", "Minus", "Asterisk", "Not", "NotEqual", "Slash", 
+            "LessThan", "LessEqual", "GreaterThan", "GreaterEqual", "Modulo", "Equal", "DoubleEqual", "Ass", "Ampersand", "DoubleAmpersand", "Plus", "Minus", "Asterisk", "Not", "NotEqual", "Slash", 
             "Semicolon", "Hash", "Dot", "Comma", "Colon",      
-            "SingleQuote", "DoubleQuote", "Char", "Comment", "Return", "Pipe", "End",
+            "SingleQuote", "DoubleQuote", "Char", "Comment", "Return", "Pipe", "DoublePipe", "End",
             "Unexpected",
     };
     return os << names[static_cast<int>(kind)];

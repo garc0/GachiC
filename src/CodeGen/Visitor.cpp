@@ -227,12 +227,12 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
             if(R->isFloatTy() || R->isDoubleTy())
                 return Builder.CreateCast(llvm::Instruction::CastOps::SIToFP, L, R);
             if(R->isIntegerTy())
-                return Builder.CreateCast(llvm::Instruction::CastOps::ZExt, L, R);
+                return Builder.CreateCast(llvm::Instruction::CastOps::SExt, L, R);
         }
 
         if(L->getType()->isFloatTy() || L->getType()->isDoubleTy()){
             if(R->isFloatTy() || R->isDoubleTy())
-                return Builder.CreateCast(llvm::Instruction::CastOps::ZExt, L, R);
+                return Builder.CreateCast(llvm::Instruction::CastOps::SExt, L, R);
             if(R->isIntegerTy())
                 return Builder.CreateCast(llvm::Instruction::CastOps::FPToSI, L, R);
         }
@@ -252,6 +252,7 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
     if(L->getType() != R->getType()){
       std::cout << "L->getType() != R->getType()" << std::endl;
     }
+
 
     if(!L->getType()->isFloatingPointTy()){
         switch (node.Op.kind()) {
@@ -275,6 +276,10 @@ llvm::Value * VisitorExpr::operator()(BinaryExprNode &node, T &){
             return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SGE, L, R, "cmpu");
         case Token::Kind::DoubleEqual:
             return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_EQ, L, R, "equ");
+        case Token::Kind::DoublePipe:
+            return Builder.CreateOr(L, R, "oru");
+        case Token::Kind::DoubleAmpersand:
+            return Builder.CreateAnd(L, R, "andu");
         case Token::Kind::NotEqual:
             return Builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_NE, L, R, "neu");
         default:
@@ -359,11 +364,15 @@ llvm::Value * VisitorExpr::operator()(NumberExprNode &node, T &){
 
     bool is_float = node._val.find('.') != std::string::npos;
 
+    std::cout << node._val << std::endl;
+
     if(is_float){
         auto d = std::stod(node._val);
 
-        if(is_in_range(float(d))) return llvm::ConstantFP::get(TheContext, llvm::APFloat(float(d)));
-        if(is_in_range(double(d))) return llvm::ConstantFP::get(TheContext, llvm::APFloat(double(d)));
+        std::cout << "Float found: " << d << std::endl;
+
+        if(is_in_range(float(d))) return llvm::ConstantFP::get(llvm::Type::getFloatTy(TheContext), d);
+        if(is_in_range(double(d))) return llvm::ConstantFP::get(llvm::Type::getDoubleTy(TheContext), d);
 
     }else{
         auto i = std::stoll(node._val);
