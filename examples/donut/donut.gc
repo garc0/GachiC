@@ -1,0 +1,89 @@
+extern printf(x: *i8, y: i8) cum nothing;
+extern memset(ptr: *i8, value: i32, num: i64) cum *nothing;
+extern malloc(x: i64) cum *i8;
+
+extern sinf(x: f32) cum f32;
+extern cosf(x: f32) cum f32;
+
+extern putchar(x : i32) cum i32;
+
+// For Windows:
+// extern Sleep(x: i64) cum nothing;
+extern usleep(x: i64) cum i32;
+
+master() cum i32
+{
+	var k = 0 ass i32;
+
+    var A = 0 ass f32;
+    var B = 0 ass f32;
+    var i = 0 ass f32;
+    var j = 0 ass f32;
+
+    // Alloc mem
+    stick your [1760]f32 in my z;
+    stick your [1760]i8 in my b;
+
+    printf("%c[2J", 27 ass i8);
+
+    while(1 ass bool) {
+        memset(&b ass *i8, 32, 1760 ass i64);
+        memset(&z ass *i8, 0, (1760 * 4) ass i64);
+        j = 0 ass f32;
+        while (j < (6.28)) |j = j + (0.07)|
+        {
+        	i = 0 ass f32;
+            while(i < (6.28)) |i = i + (0.02)|
+           	{
+                var c = sinf(i);
+                var d = cosf(j);
+
+                var e = sinf(A);
+                var f = sinf(j);
+                var g = cosf(A);
+                var h = d + 2.0;
+                var D = 1.0 / ((c * h * e) + (f * g) + 5.0);
+                var l = cosf(i);
+                var m = cosf(B);
+                var n = sinf(B);
+                var t = (c * h * g) - (f * e);
+                var x = (40.0 + 30.0 * D * ((l * h * m) - (t * n))) ass i32;
+                var y = (12.0 + 15.0 * D * ((l * h * n) + (t * m))) ass i32;
+                var o = x + 80 * y;
+                var N = (8.0 * ((f * e - (c * d * g)) * m - (c * d * e) - (f * g) - (l * d * n))) ass i32;
+                if((22 > y) && (0 < y)) && ((x > 0) && (x < 80)) && (D > z[o]){
+                    z[o] = D;
+                    var str = *((".,-~:;=!*#$@") ass *[12]i8);
+                    if(N > 0){
+                    	b[o] = str[N % 12];
+                    }
+                    else b[o] = str[0];
+                };
+            };
+        };
+        printf("%c[H", 27 ass i8);
+
+        k = 0 ass i32;
+
+        while(k < 1761) |k = k + 1|
+        {
+        	if((k % 80) != 0){
+            	putchar(b[k]);
+       		} else {
+            	putchar(10 ass i8);
+        	};
+
+            A = A + 0.00004;
+            B = B + 0.00002;
+       	};
+
+       	usleep(30000);
+
+    };
+
+    // Free mem
+    stick out z;
+    stick out b;
+
+	cumming(0);
+}

@@ -363,13 +363,8 @@ template<class T>
 llvm::Value * VisitorExpr::operator()(NumberExprNode &node, T &){
 
     bool is_float = node._val.find('.') != std::string::npos;
-
-    std::cout << node._val << std::endl;
-
     if(is_float){
         auto d = std::stod(node._val);
-
-        std::cout << "Float found: " << d << std::endl;
 
         if(is_in_range(float(d))) return llvm::ConstantFP::get(llvm::Type::getFloatTy(TheContext), d);
         if(is_in_range(double(d))) return llvm::ConstantFP::get(llvm::Type::getDoubleTy(TheContext), d);
