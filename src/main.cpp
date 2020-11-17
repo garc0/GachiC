@@ -76,19 +76,8 @@ static llvm::Value * HandleStruct(Parser * parser) {
 }
 
 static llvm::Value * HandleExtern(Parser * parser) {
-  if (auto ProtoAST = parser->parseExtern()) {
-    if (auto *FnIR = std::visit(VisitorFunction{}, *ProtoAST.get())) {
-
-      auto proto_name = std::visit(overload{
-        [](PrototypeNode &n){
-            return n.getName();
-        },
-        [](auto &) -> std::string{ return ""; }
-      }, *ProtoAST.get());
-      FunctionProtos[proto_name] = std::move(ProtoAST);
-
-      return FnIR;
-    }
+  if (auto ExternAST = parser->parseExtern()) {
+    return std::visit(VisitorFunction{}, *ExternAST.get());
   } else parser->eat();
 
   return nullptr;
@@ -128,7 +117,7 @@ static void MainLoop(Parser * parser, bool d) {
           auto _e = reinterpret_cast<llvm::Type*>(HandleStruct(parser));
           if(d)
             _e->print(errs());
-            std::cerr << '\n';
+          std::cerr << '\n';
         }
         break;
       default:
@@ -252,7 +241,9 @@ int main(int argc, char* argv[]) {
 
   if(filenames.size() == 0){
     std::cerr << "i need a source files!" << std::endl;
-    return -1;
+    //return -1;
+
+    filenames.push_back("../cringe/test.gc");
   }
 
   for(auto &module_name : filenames){

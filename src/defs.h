@@ -5,6 +5,7 @@
 #include <variant>
 
 class Node;
+
 class ArrayExprNode;
 class ArrayInitNode;
 class BinaryExprNode;
@@ -24,8 +25,11 @@ class CharNode;
 class StringNode;
 class StickNode;
 
+class ModuleNode;
+
 class PrototypeNode;
 class FunctionNode;
+class ExternNode;
 
 
 // copypasta
@@ -56,7 +60,14 @@ using ASTNode = std::variant<
 
 using DefNode = std::variant<
             std::nullptr_t,
-            PrototypeNode, FunctionNode>;
+            PrototypeNode, 
+            FunctionNode,
+            ExternNode
+            >;
 
+using ModNode = std::variant<
+            std::nullptr_t, 
+            ModuleNode
+            >;
 
 #endif

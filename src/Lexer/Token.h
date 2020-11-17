@@ -30,6 +30,7 @@ public:
         Cum,
 
         Def,
+        Gym,
         Master,
         Struct,
         Array,
@@ -133,7 +134,7 @@ static std::ostream& operator<<(std::ostream& os, const Token::Kind& kind) {
     static const char * const names[]{
             "Number", "Identifier",
             "Var", "Stick", "Your", "In", "My", "Out", "Cum",
-            "Def", "Master", "Struct", "Array", "Extern", 
+            "Def", "Gym", "Master", "Struct", "Array", "Extern", 
             "If", "Else", "For", "While",
             "Binary", "Unary", 
             "LeftParen", "RightParen", "LeftSquare", "RightSquare", "LeftCurly", "RightCurly",

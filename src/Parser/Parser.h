@@ -73,15 +73,16 @@ public:
         return this->eat();
     }
 
+    //std::unique_ptr<ModNode>    parseModule();
+
     std::unique_ptr<DefNode>    parsePrototype();
     std::unique_ptr<DefNode>    parseExtern();
     std::unique_ptr<DefNode>    parseDef();
 
     std::unique_ptr<DefNode>    parseMain();
+    std::unique_ptr<DefNode>    parseTopLevelExpr();
     
     std::unique_ptr<ASTNode>    parseStruct();
-
-    std::unique_ptr<DefNode>    parseTopLevelExpr();
 
 private:
     Token _cToken;

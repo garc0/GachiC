@@ -6,7 +6,6 @@ llvm::Function * getFunction(std::string Name) {
   if (auto *F = TheModule->getFunction(Name))
     return F;
 
-
   auto FI = FunctionProtos.find(Name);
   if (FI != FunctionProtos.end())
     return std::visit(VisitorFunction{}, *(FI->second).get());

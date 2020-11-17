@@ -8,32 +8,33 @@ llvm::Function * VisitorFunction::operator()(std::nullptr_t &){
     return nullptr;
 }
 
-llvm::Function * VisitorFunction::operator()(PrototypeNode &prot_){
+llvm::Function * VisitorFunction::operator()(PrototypeNode & prot_){
     std::vector<llvm::Type *> f_args;
 
-    auto Name = prot_.getName();
-    auto RetType = prot_.getTypeRet();
+    auto name = prot_.getName();
 
     for(auto &i: prot_.Args){
-        llvm::Type * ty = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*i.second.get()));
+        auto type = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*i.second.get()));
 
-        f_args.push_back(ty);
+        f_args.push_back(type);
     }
 
-    llvm::Type * ret_ty = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*RetType));
+    llvm::Type * ret_type = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*prot_.getTypeRet()));
 
-    llvm::FunctionType *FT =
-        llvm::FunctionType::get(ret_ty, f_args, false);
+    llvm::FunctionType * func_type =
+        llvm::FunctionType::get(ret_type, f_args, false);
 
-    llvm::Function *F =
-        llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
+    llvm::Function * func =
+        llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, TheModule.get());
 
     // Set names for all arguments.
     unsigned Idx = 0;
-    for (auto &Arg : F->args())
-        Arg.setName(std::get<0>(prot_.Args[Idx++]));
+    for (auto &arg : func->args())
+        arg.setName(std::get<0>(prot_.Args[Idx++]));
 
-    return F;
+    func->getValueType();
+
+    return func;
 }
 
 llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
@@ -49,8 +50,9 @@ llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
     }, P); 
 
     FunctionProtos[proto_name] = std::move(Proto);
-    llvm::Function *TheFunction = getFunction(proto_name);
+    llvm::Function * TheFunction = getFunction(proto_name);
 
+    NamedValues[std::string(TheFunction->getName())] = {(llvm::AllocaInst*)TheFunction, TheFunction->getType()};
 
     if (!TheFunction)
         return nullptr;
@@ -58,12 +60,24 @@ llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(TheContext, "entry", TheFunction);
     Builder.SetInsertPoint(BB);
 
-    NamedValues.clear();
-    for (auto &Arg : TheFunction->args()) {
+    // bruh
+    std::vector<std::pair<std::string, std::pair<llvm::AllocaInst *, llvm::Type *>>> temp_values;
+    
+    for (auto &arg : TheFunction->args()) {
+        
+        auto arg_name = std::string(arg.getName());
+
+        
+        auto found_var = NamedValues.find(arg_name);
+        if(found_var != NamedValues.end())
+            temp_values.push_back({ arg_name, { found_var->second.first, found_var->second.second }});
+        else
+            temp_values.push_back({ arg_name, { nullptr, nullptr }});
+        
 
         auto arg_type = std::visit(overload{
             [&](PrototypeNode & p){
-                return p.getArgType(Arg.getArgNo());
+                return p.getArgType(arg.getArgNo());
             },
             [](auto &) -> ASTNode*{ return nullptr; }
         }, *FunctionProtos[proto_name].get());
@@ -71,25 +85,80 @@ llvm::Function * VisitorFunction::operator()(FunctionNode & func_){
         
         llvm::Type * ty = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*arg_type));
 
-        llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), ty);
 
-        Builder.CreateStore(&Arg, Alloca);
+        llvm::AllocaInst * Alloca = CreateEntryBlockAlloca(TheFunction, arg.getName(), ty);
 
-        std::get<0>(NamedValues[std::string(Arg.getName())]) = Alloca;
+        Builder.CreateStore(&arg, Alloca);
+
+        std::get<0>(NamedValues[arg_name]) = Alloca;
+        std::get<1>(NamedValues[arg_name]) = ty;
     }
 
     auto Body = func_.getBody();
 
     if (llvm::Value * RetVal = VisitorExpr{}.expr_visit(*Body)) {
         verifyFunction(*TheFunction);
-        return TheFunction;
     }
+
+    for(auto &i: temp_values){
+        if(i.second.first == nullptr)
+            NamedValues.erase(i.first);
+        else{
+            std::get<0>(NamedValues[i.first]) = i.second.first;
+            std::get<1>(NamedValues[i.first]) = i.second.second;
+        }
+    }
+
+    return TheFunction;
 
     TheFunction->eraseFromParent();
 
     return nullptr;
 }
 
+llvm::Function * VisitorFunction::operator()(ExternNode & node_){
+
+    if(node_._e_type == ExternNode::Type::Variable){
+
+        llvm::Type * type = reinterpret_cast<llvm::Type*>(VisitorExpr{}.expr_visit(*node_._ret_type));
+
+        auto * gvar_ptr = new llvm::GlobalVariable(
+                *TheModule.get(),
+                type, 
+                false,
+                llvm::GlobalValue::CommonLinkage,
+                0,
+                node_._name
+            );
+
+        std::get<0>(NamedValues[node_._name]) = (llvm::AllocaInst*)gvar_ptr;
+        std::get<1>(NamedValues[node_._name]) = type;
+
+        return nullptr;
+    }
+
+    auto proto_name = std::visit(overload{
+        [](PrototypeNode & p) -> std::string{
+            return p.getName();
+        },
+        [](auto &) -> std::string{ return ""; }
+    }, *node_._prot.get()); 
+
+    FunctionProtos[proto_name] = std::move(node_._prot);
+    auto func = getFunction(proto_name);
+    NamedValues[std::string(func->getName())] = {(llvm::AllocaInst*)func, func->getType()};
+
+    return func;
+}
+
+llvm::Module * VisitorModule::operator()(nullptr_t &){
+    return nullptr;
+}
+
+llvm::Module * VisitorModule::operator()(ModuleNode & node){
+
+    return nullptr;
+}
 
 template<class T>
 llvm::Value * VisitorExpr::operator()(std::nullptr_t &, T &){
@@ -337,9 +406,14 @@ llvm::Value * VisitorExpr::operator()(BlockNode &node, T &){
 template<class T>
 llvm::Value * VisitorExpr::operator()(CallExprNode &node, T &){
 
-    llvm::Function *CalleeF = getFunction(node.Callee);
+    llvm::Function * CalleeF = getFunction(node.Callee);
     if (!CalleeF)
-        return LogErrorV("Unknown function referenced");
+    {
+        auto found = NamedValues.find(node.Callee);
+        if(found == NamedValues.end())
+            return LogErrorV("Unknown function referenced");
+        CalleeF = (llvm::Function*)(found->second.first);
+    }
 
     // If argument mismatch error.
     if (CalleeF->arg_size() != node.Args.size())
@@ -787,36 +861,37 @@ llvm::Value * VisitorExpr::operator()(IfExpr &node, T &){
 
 #include <functional>
 
+
 template<class T> llvm::Value * VisitorExpr::operator()(TypeNode &node, T &){
 
     using it = std::vector<TypeNode::type_pair>::iterator;
 
     std::function<llvm::Type*(it, it)> _helper = [&](auto tv, auto end) -> llvm::Type*{
         if(tv == end) return nullptr;
-        if(tv->first == TypeNode::type_id::pointer){
+        if(tv->first == TypeNode::Kind::pointer){
             return llvm::PointerType::get(_helper(++tv, end), 0);
         }
 
-        if(tv->first == TypeNode::type_id::array){
+        if(tv->first == TypeNode::Kind::array){
             std::size_t sz = std::stoll(tv->second.c_str());
             return llvm::ArrayType::get(_helper(++tv, end), sz);
         }
 
-        switch(tv->first){
-            case TypeNode::type_id::nothing: return llvm::Type::getVoidTy(TheContext);
-            case TypeNode::type_id::u1: return llvm::Type::getInt8Ty(TheContext);
+        switch((tv)->first){
+            case TypeNode::Kind::nothing: return llvm::Type::getVoidTy(TheContext);
+            case TypeNode::Kind::u1: return llvm::Type::getInt8Ty(TheContext);
 
-            case TypeNode::type_id::u8:  return llvm::Type::getInt8Ty(TheContext);
-            case TypeNode::type_id::u16: return llvm::Type::getInt16Ty(TheContext);
-            case TypeNode::type_id::u32: return llvm::Type::getInt32Ty(TheContext);
-            case TypeNode::type_id::u64: return llvm::Type::getInt64Ty(TheContext); 
+            case TypeNode::Kind::u8:  return llvm::Type::getInt8Ty(TheContext);
+            case TypeNode::Kind::u16: return llvm::Type::getInt16Ty(TheContext);
+            case TypeNode::Kind::u32: return llvm::Type::getInt32Ty(TheContext);
+            case TypeNode::Kind::u64: return llvm::Type::getInt64Ty(TheContext); 
 
-            case TypeNode::type_id::i8:  return llvm::Type::getInt8Ty(TheContext);
-            case TypeNode::type_id::i16: return llvm::Type::getInt16Ty(TheContext);
-            case TypeNode::type_id::i32: return llvm::Type::getInt32Ty(TheContext);
-            case TypeNode::type_id::i64: return llvm::Type::getInt64Ty(TheContext); 
-            case TypeNode::type_id::f32: return llvm::Type::getFloatTy(TheContext);
-            case TypeNode::type_id::f64: return llvm::Type::getDoubleTy(TheContext);
+            case TypeNode::Kind::i8:  return llvm::Type::getInt8Ty(TheContext);
+            case TypeNode::Kind::i16: return llvm::Type::getInt16Ty(TheContext);
+            case TypeNode::Kind::i32: return llvm::Type::getInt32Ty(TheContext);
+            case TypeNode::Kind::i64: return llvm::Type::getInt64Ty(TheContext); 
+            case TypeNode::Kind::f32: return llvm::Type::getFloatTy(TheContext);
+            case TypeNode::Kind::f64: return llvm::Type::getDoubleTy(TheContext);
         }
 
         auto f = NamedStructures.find(tv->second);
@@ -826,6 +901,37 @@ template<class T> llvm::Value * VisitorExpr::operator()(TypeNode &node, T &){
         return nullptr;
     };
 
+    if(node._t.begin()->first == TypeNode::Kind::prototype)
+    {
+        auto cur_it = ++node._t.begin();
+
+        std::cout << std::distance(node._t.begin(), cur_it)  << std::endl; 
+
+        auto ret_type = _helper(cur_it, node._t.end());
+        std::cout << std::distance(node._t.begin(), cur_it)  << std::endl; 
+        cur_it++;
+        if(!ret_type)
+            return nullptr;
+        
+        std::vector<llvm::Type*> arg_types;
+
+        while(std::distance(cur_it, node._t.end()) > 1){
+            auto arg_type = _helper(cur_it, node._t.end());
+            std::cout << std::distance(node._t.begin(), cur_it)  << std::endl; 
+        
+            if(!arg_type)
+                return nullptr;
+            arg_types.push_back(arg_type);
+
+            cur_it++;
+        }
+
+        auto func_type = llvm::FunctionType::get(ret_type, arg_types, false);
+
+        return reinterpret_cast<llvm::Value*>(func_type->getPointerTo());
+    }
+
+    auto cur_it = node._t.begin();
     //dick move
-    return reinterpret_cast<llvm::Value*>(_helper(node._t.begin(), node._t.end()));
+    return reinterpret_cast<llvm::Value*>(_helper(cur_it, node._t.end()));
 }

@@ -280,7 +280,7 @@ public:
 class TypeNode  {
 public:
 
-  enum class type_id{
+  enum class Kind{
     pointer,
 
     nothing,
@@ -304,9 +304,11 @@ public:
 
     struct_type,
     array,
+    prototype,
+    module,
   }; 
 
-  using type_pair = std::pair<type_id, std::string>;
+  using type_pair = std::pair<Kind, std::string>;
 
   TypeNode(std::vector<type_pair> t)
     : _t(std::move(t)) {}
@@ -360,7 +362,36 @@ public:
   std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> Args;
 
   std::unique_ptr<ASTNode> RetType = nullptr;
+};
 
+class ExternNode {
+public:
+  enum class Type{
+    Prototype,
+    Variable  
+  };
+  ExternNode( std::unique_ptr<DefNode> prot_, 
+              std::string name_,
+              std::unique_ptr<ASTNode> ret_type_,
+              Type e_type = Type::Prototype)
+      : _name(std::move(name_)), _prot(std::move(prot_)), 
+      _ret_type(std::move(ret_type_)), _e_type(e_type) {}
+
+  ExternNode() = delete;
+
+  ExternNode &operator=(const ExternNode &) = delete;
+  ExternNode(const ExternNode &) = delete;
+  ExternNode(ExternNode &&) = default;
+  ExternNode &operator=(ExternNode &&) = default;
+
+  ~ExternNode() = default;
+
+  std::string _name;
+  std::unique_ptr<ASTNode> _ret_type;
+
+  std::unique_ptr<DefNode> _prot;
+
+  Type _e_type;
 };
 
 class StructNode {  
@@ -383,6 +414,31 @@ public:
   std::vector<std::pair<std::string, std::unique_ptr<ASTNode>>> _elements;
   std::string _struct_name;
 };
+
+class ModuleNode {  
+public:
+
+  ModuleNode(std::string module_name_, 
+      std::vector<std::unique_ptr<DefNode>> functions_,
+      std::vector<std::unique_ptr<ASTNode>> exprs_)
+      :  _module_name(std::move(module_name_)), _functions(std::move(functions_)),
+        _exprs(std::move(exprs_))
+          {}
+
+  ModuleNode() = delete;
+
+  ModuleNode &operator=(const ModuleNode &) = delete;
+  ModuleNode(const ModuleNode &) = delete;
+  ModuleNode(ModuleNode &&) = default;
+  ModuleNode &operator=(ModuleNode &&) = default;
+
+  ~ModuleNode() = default;
+
+  std::vector<std::unique_ptr<DefNode>> _functions;
+  std::vector<std::unique_ptr<ASTNode>> _exprs;
+  std::string _module_name;
+};
+
 
 class StructExprNode  {
 

@@ -141,6 +141,7 @@ std::optional<Token::Kind> stotok(std::string identifier){
         {"cum", Token::Kind::Cum},
         {"out", Token::Kind::Out},
         {"master", Token::Kind::Master},
+        {"gym", Token::Kind::Gym},
         {"ass", Token::Kind::Ass},
         {"extern", Token::Kind::Extern},
         {"array", Token::Kind::Array},

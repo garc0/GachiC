@@ -48,6 +48,7 @@ public:
     llvm::Function * operator()(std::nullptr_t &);
     llvm::Function * operator()(PrototypeNode &);
     llvm::Function * operator()(FunctionNode &);
+    llvm::Function * operator()(ExternNode &);
 
 private:
 };
@@ -88,6 +89,15 @@ public:
         return std::visit(*this, node, rl);
     }
 private:
+};
+
+class VisitorModule{
+public:
+    VisitorModule(){}
+    ~VisitorModule(){}
+
+    llvm::Module * operator()(nullptr_t &);
+    llvm::Module * operator()(ModuleNode &);
 };
 
 #endif

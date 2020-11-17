@@ -1,15 +1,15 @@
-extern printf(x: *i8, y: i8) cum nothing;
-extern memset(ptr: *i8, value: i32, num: i64) cum *nothing;
-extern malloc(x: i64) cum *i8;
+extern slave printf(x: *i8, y: i8) cum nothing;
+extern slave memset(ptr: *i8, value: i32, num: i64) cum *nothing;
+extern slave malloc(x: i64) cum *i8;
 
-extern sinf(x: f32) cum f32;
-extern cosf(x: f32) cum f32;
+extern slave sinf(x: f32) cum f32;
+extern slave cosf(x: f32) cum f32;
 
-extern putchar(x : i32) cum i32;
+extern slave putchar(x : i32) cum i32;
 
 // For Windows:
 // extern Sleep(x: i64) cum nothing;
-extern usleep(x: i64) cum i32;
+extern slave usleep(x: i64) cum i32;
 
 master() cum i32
 {
